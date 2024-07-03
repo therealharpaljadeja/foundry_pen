@@ -1,7 +1,7 @@
+// backend/src/index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { exec } = require('child_process');
 require('dotenv').config();
 
 const app = express();
@@ -13,16 +13,9 @@ app.use(express.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../frontend/dist')));
 
-// API route for Foundry commands
-app.post('/api/foundry', (req, res) => {
-  const { command } = req.body;
-  exec(`foundry ${command}`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return res.status(500).json({ error: 'Command execution failed' });
-    }
-    res.json({ output: stdout + stderr });
-  });
+// API routes
+app.get('/api/hello', (req, res) => {
+  res.json({ message: 'Hello from the backend!' });
 });
 
 // The "catchall" handler: for any request that doesn't
