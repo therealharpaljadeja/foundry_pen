@@ -77,8 +77,12 @@ wss.on('connection', (ws, req) => {
       return ws.send(JSON.stringify({ error: 'Invalid session token' }));
     }
 
+    // Ensure PATH includes Foundry installation path
+    const env = Object.create(process.env);
+    env.PATH = `${process.env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
+
     // Execute the command in the user's directory
-    const child = spawn(command, { shell: true, cwd: userDir });
+    const child = spawn(command, { shell: true, cwd: userDir, env });
 
     child.stdout.on('data', (data) => {
       ws.send(JSON.stringify({ output: data.toString() }));
