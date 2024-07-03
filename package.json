@@ -6,8 +6,8 @@
       "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
       "dev:backend": "nodemon backend/src/index.js",
       "dev:frontend": "cd frontend && npm run dev",
-      "build": "cd frontend && npm run build",
-      "install": "cd backend && npm install && cd ../frontend && npm install"
+      "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+      "heroku-postbuild": "cd frontend && npm install && npm run build && cd ../backend && npm install"
     },
     "devDependencies": {
       "concurrently": "^6.2.0",
