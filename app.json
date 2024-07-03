@@ -1,0 +1,12 @@
+{
+    "name": "My Foundry App",
+    "description": "An application using Foundry on Heroku",
+    "buildpacks": [
+      {
+        "url": "heroku/nodejs"
+      },
+      {
+        "url": "https://github.com/ericbrown99/heroku-buildpack-foundry"
+      }
+    ]
+  }
