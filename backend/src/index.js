@@ -38,7 +38,14 @@ app.use((req, res, next) => {
   let sessionToken = req.headers['x-session-token'];
 
   if (!sessionToken || !sessions[sessionToken]) {
-    sessionToken = crypto.randomBytes(16).toString('hex');
+    if (!sessionToken) {
+      sessionToken = crypto.randomBytes(16).toString('hex');
+      console.log(`No session token provided, generated new token: ${sessionToken}`);
+    } else {
+      console.log(`Invalid session token provided: ${sessionToken}, generating new token`);
+      sessionToken = crypto.randomBytes(16).toString('hex');
+    }
+
     const userDir = path.join(os.tmpdir(), sessionToken);
     try {
       fs.mkdirSync(userDir, { recursive: true });
