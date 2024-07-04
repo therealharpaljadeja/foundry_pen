@@ -1,4 +1,3 @@
-// frontend/src/App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 
 const App = () => {
@@ -6,8 +5,27 @@ const App = () => {
   const [output, setOutput] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
   const ws = useRef(null);
+  const [sessionToken, setSessionToken] = useState(null);
 
   useEffect(() => {
+    const fetchSessionToken = async () => {
+      let token = localStorage.getItem('sessionToken');
+      if (!token) {
+        const response = await fetch('/api/session');
+        const data = await response.json();
+        token = data.sessionToken;
+        localStorage.setItem('sessionToken', token);
+        console.log('New session token received:', token);
+      }
+      setSessionToken(token);
+    };
+
+    fetchSessionToken();
+  }, []);
+
+  useEffect(() => {
+    if (!sessionToken) return;
+
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsHost = window.location.host;
     ws.current = new WebSocket(`${wsProtocol}://${wsHost}`);
@@ -23,16 +41,7 @@ const App = () => {
       setIsExecuting(false);
     };
 
-    ws.current.onopen = async () => {
-      let sessionToken = localStorage.getItem('sessionToken');
-      if (!sessionToken) {
-        // Fetch session token from the backend
-        const response = await fetch('/api/session');
-        const data = await response.json();
-        sessionToken = data.sessionToken;
-        localStorage.setItem('sessionToken', sessionToken);
-        console.log('New session token received:', sessionToken);
-      }
+    ws.current.onopen = () => {
       console.log('WebSocket connection opened, sessionToken:', sessionToken);
     };
 
@@ -43,7 +52,7 @@ const App = () => {
     return () => {
       ws.current.close();
     };
-  }, []);
+  }, [sessionToken]);
 
   const executeCommand = () => {
     if (command.trim() === '') {
@@ -51,7 +60,6 @@ const App = () => {
       return;
     }
 
-    const sessionToken = localStorage.getItem('sessionToken');
     console.log('Executing command, sessionToken:', sessionToken);
     if (ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ command, sessionToken }));
