@@ -40,11 +40,15 @@ app.use((req, res, next) => {
   if (!sessionToken || !sessions[sessionToken]) {
     sessionToken = crypto.randomBytes(16).toString('hex');
     const userDir = path.join(os.tmpdir(), sessionToken);
-    fs.mkdirSync(userDir, { recursive: true });
-    sessions[sessionToken] = userDir;
-    console.log(`New session created: ${sessionToken}`);
+    try {
+      fs.mkdirSync(userDir, { recursive: true });
+      sessions[sessionToken] = userDir;
+      console.log(`New session created: ${sessionToken} at ${userDir}`);
+    } catch (error) {
+      console.error(`Error creating directory: ${userDir}`, error);
+    }
   } else {
-    console.log(`Existing session: ${sessionToken}`);
+    console.log(`Existing session: ${sessionToken} at ${sessions[sessionToken]}`);
   }
 
   req.sessionToken = sessionToken;
@@ -103,7 +107,9 @@ wss.on('connection', (ws, req) => {
 
     // Ensure PATH includes Foundry installation path
     const env = Object.create(process.env);
-    env.PATH = `${process.env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
+    env.PATH = `${env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
+    console.log(`Executing command in directory: ${userDir}`);
+    console.log(`Environment PATH: ${env.PATH}`);
 
     // Execute the command in the user's directory
     const child = spawn(command, { shell: true, cwd: userDir, env });
