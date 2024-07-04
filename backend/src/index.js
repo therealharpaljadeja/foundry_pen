@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
@@ -51,18 +51,29 @@ app.use((req, res, next) => {
       fs.mkdirSync(userDir, { recursive: true });
       sessions[sessionToken] = userDir;
       console.log(`New session created: ${sessionToken} at ${userDir}`);
+
+      // Run install_foundry.sh script
+      exec('bash ./install_foundry.sh', (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error during Foundry installation: ${error}`);
+          return next(new Error('Internal Server Error'));
+        }
+        console.log(`Foundry installation output: ${stdout}`);
+        console.error(`Foundry installation error output: ${stderr}`);
+        next();
+      });
     } catch (error) {
       console.error(`Error creating directory: ${userDir}`, error);
+      return next(new Error('Internal Server Error'));
     }
   } else {
     console.log(`Existing session: ${sessionToken} at ${sessions[sessionToken]}`);
+    next();
   }
 
   req.sessionToken = sessionToken;
   req.userDir = sessions[sessionToken];
   res.setHeader('x-session-token', sessionToken);
-
-  next();
 });
 
 // Serve static files from the React app
