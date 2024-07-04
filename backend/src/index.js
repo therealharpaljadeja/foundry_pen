@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Set trust proxy to trust Heroku's reverse proxy
+// trust the first proxy in the chain which wil be Heroku's reverse proxy
 app.set('trust proxy', 1);
 
 app.use(cors());
@@ -42,9 +42,6 @@ app.use((req, res, next) => {
     const userDir = path.join(os.tmpdir(), sessionToken);
     fs.mkdirSync(userDir, { recursive: true });
     sessions[sessionToken] = userDir;
-    console.log(`New session created: ${sessionToken}`);
-  } else {
-    console.log(`Existing session: ${sessionToken}`);
   }
 
   req.sessionToken = sessionToken;
@@ -56,11 +53,6 @@ app.use((req, res, next) => {
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-
-// API route to get session token
-app.get('/api/session', (req, res) => {
-  res.json({ sessionToken: req.sessionToken });
-});
 
 // API routes
 app.get('/api/hello', (req, res) => {
@@ -76,28 +68,15 @@ const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, req) => {
   ws.on('message', (message) => {
-    let parsedMessage;
+    const { command, sessionToken } = JSON.parse(message);
 
-    // Ensure the message is a valid JSON string
-    try {
-      parsedMessage = JSON.parse(message);
-    } catch (error) {
-      console.error('Invalid JSON message received:', message);
-      return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
-    }
-
-    const { command, sessionToken } = parsedMessage;
-    console.log(`Received command: ${command}, sessionToken: ${sessionToken}`);
-
-    // Validate the command input
     if (!command || typeof command !== 'string') {
       return ws.send(JSON.stringify({ error: 'Invalid command input' }));
     }
 
-    // Validate the session token
     const userDir = sessions[sessionToken];
+
     if (!userDir) {
-      console.log(`Invalid session token: ${sessionToken}`);
       return ws.send(JSON.stringify({ error: 'Invalid session token' }));
     }
 
