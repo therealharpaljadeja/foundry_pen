@@ -14,6 +14,7 @@ const App = () => {
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log('Received message from server:', data);
       if (data.error) {
         setOutput((prev) => prev + '\n' + data.error);
       } else {
@@ -22,11 +23,21 @@ const App = () => {
       setIsExecuting(false);
     };
 
-    ws.current.onopen = () => {
-      const sessionToken = localStorage.getItem('sessionToken');
-      if (sessionToken) {
-        ws.current.send(JSON.stringify({ sessionToken }));
+    ws.current.onopen = async () => {
+      let sessionToken = localStorage.getItem('sessionToken');
+      if (!sessionToken) {
+        // Fetch session token from the backend
+        const response = await fetch('/api/session');
+        const data = await response.json();
+        sessionToken = data.sessionToken;
+        localStorage.setItem('sessionToken', sessionToken);
+        console.log('New session token received:', sessionToken);
       }
+      console.log('WebSocket connection opened, sessionToken:', sessionToken);
+    };
+
+    ws.current.onclose = () => {
+      console.log('WebSocket connection closed');
     };
 
     return () => {
@@ -41,6 +52,7 @@ const App = () => {
     }
 
     const sessionToken = localStorage.getItem('sessionToken');
+    console.log('Executing command, sessionToken:', sessionToken);
     if (ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ command, sessionToken }));
       setCommand('');
