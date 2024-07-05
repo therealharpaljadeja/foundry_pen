@@ -183,21 +183,7 @@ wss.on('connection', (ws, req) => {
         return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
       }
   
-      const { type, command, sessionToken, isREPL } = parsedMessage;
-  
-      if (type === 'init') {
-        console.log(`WebSocket connection initialized with sessionToken: ${sessionToken}`);
-        ws.sessionToken = sessionToken;
-        if (sessions[sessionToken] && sessions[sessionToken].foundryInstalled) {
-          ws.send(JSON.stringify({ type: 'foundryInstalled' }));
-        }
-        return;
-      }
-  
-      // Validate the command input
-      if (!command || typeof command !== 'string') {
-        return ws.send(JSON.stringify({ error: 'Invalid command input' }));
-      }
+      const { type, command, sessionToken } = parsedMessage;
   
       // Validate the session token
       const session = sessions[sessionToken];
@@ -211,62 +197,47 @@ wss.on('connection', (ws, req) => {
         return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
       }
   
-      // Ensure PATH includes Foundry installation path
-      const env = Object.create(process.env);
-      env.PATH = `${env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
-      console.log(`Executing command in directory: ${session.userDir}`);
-      console.log(`Environment PATH: ${env.PATH}`);
-  
-      if (isREPL) {
-        handleREPLCommand(ws, session, command, env);
+      // Handle the command
+      if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
+        handleREPLCommand(ws, session, command, process.env);
+      } else if (session.replProcess) {
+        handleREPLCommand(ws, session, command, process.env);
       } else {
-        handleRegularCommand(ws, session, command, env);
+        handleRegularCommand(ws, session, command, process.env);
       }
     });
   });
   
   function handleREPLCommand(ws, session, command, env) {
-    console.log(`Handling REPL command: ${command}`);
-    console.log(`REPL state: ${session.replProcess ? 'Running' : 'Not running'}, Ready: ${session.replReady}`);
+    if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
+      console.log('Starting new Chisel REPL process');
+      session.replProcess = spawn('chisel', [], { cwd: session.userDir, env, stdio: ['pipe', 'pipe', 'pipe'] });
+      session.replReady = false;
   
-    if (command.trim().toLowerCase() === 'chisel') {
-      if (!session.replProcess) {
-        console.log('Starting new Chisel REPL process');
-        session.replProcess = spawn('chisel', [], { cwd: session.userDir, env, stdio: ['pipe', 'pipe', 'pipe'] });
-        session.replReady = false;
-  
-        session.replProcess.stdout.on('data', (data) => {
-          const output = data.toString();
-          console.log('REPL output:', output);
-          ws.send(JSON.stringify({ output }));
-          if (output.includes('Welcome to Chisel')) {
-            session.replReady = true;
-            console.log('Chisel REPL is ready');
-            ws.send(JSON.stringify({ type: 'replReady' }));
-          }
-        });
-  
-        session.replProcess.stderr.on('data', (data) => {
-          console.error('REPL error:', data.toString());
-          ws.send(JSON.stringify({ error: data.toString() }));
-        });
-  
-        session.replProcess.on('close', (code) => {
-          console.log(`Chisel REPL process exited with code ${code}`);
-          delete session.replProcess;
-          delete session.replReady;
-          ws.send(JSON.stringify({ type: 'replClosed' }));
-        });
-  
-        ws.send(JSON.stringify({ type: 'replStarting' }));
-      } else {
-        console.log('Chisel REPL is already running or starting');
-        if (session.replReady) {
+      session.replProcess.stdout.on('data', (data) => {
+        const output = data.toString();
+        console.log('REPL output:', output);
+        ws.send(JSON.stringify({ output }));
+        if (output.includes('Welcome to Chisel')) {
+          session.replReady = true;
+          console.log('Chisel REPL is ready');
           ws.send(JSON.stringify({ type: 'replReady' }));
-        } else {
-          ws.send(JSON.stringify({ type: 'replStarting' }));
         }
-      }
+      });
+  
+      session.replProcess.stderr.on('data', (data) => {
+        console.error('REPL error:', data.toString());
+        ws.send(JSON.stringify({ error: data.toString() }));
+      });
+  
+      session.replProcess.on('close', (code) => {
+        console.log(`Chisel REPL process exited with code ${code}`);
+        delete session.replProcess;
+        delete session.replReady;
+        ws.send(JSON.stringify({ type: 'replClosed' }));
+      });
+  
+      ws.send(JSON.stringify({ type: 'replStarting' }));
     } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
       console.log('Exiting Chisel REPL');
       session.replProcess.stdin.write('.exit\n');
@@ -282,9 +253,6 @@ wss.on('connection', (ws, req) => {
         console.log('Chisel REPL is not ready yet');
         ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
       }
-    } else {
-      console.log('Chisel REPL is not running');
-      ws.send(JSON.stringify({ error: 'Chisel REPL is not running. Start it with the "chisel" command.' }));
     }
   }
   

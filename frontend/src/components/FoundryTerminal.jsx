@@ -59,6 +59,7 @@ const FoundryTerminal = () => {
         setIsREPLReady(false);
         addToHistory('system', 'Chisel REPL is starting. Please wait...');
       } else if (data.type === 'replReady') {
+        setIsREPLMode(true);
         setIsREPLReady(true);
         addToHistory('system', 'Chisel REPL is ready.');
       } else if (data.type === 'replClosed') {
@@ -106,7 +107,7 @@ const FoundryTerminal = () => {
     if (ws.current.readyState === WebSocket.OPEN) {
       addToHistory('command', command);
 
-      ws.current.send(JSON.stringify({ command, sessionToken, isREPL: isREPLMode }));
+      ws.current.send(JSON.stringify({ command, sessionToken }));
       
       if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
         setIsREPLMode(false);
