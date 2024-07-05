@@ -10,6 +10,7 @@ const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(morgan('combined'));
+app.use(cookieParser());
 
 // Rate limiting
 const limiter = rateLimit({
@@ -79,12 +81,16 @@ const installFoundry = async (userDir, sessionToken) => {
 
 // Middleware to handle session tokens
 app.use((req, res, next) => {
-  let sessionToken = req.headers['x-session-token'];
+  let sessionToken = req.headers['x-session-token'] || req.cookies.sessionToken;
 
-  if (!sessionToken || !sessions[sessionToken]) {
-    if (!sessionToken) {
-      sessionToken = crypto.randomBytes(16).toString('hex');
-    }
+  if (sessionToken && sessions[sessionToken]) {
+    // Existing session
+    console.log(`Existing session: ${sessionToken} at ${sessions[sessionToken].userDir}`);
+    req.sessionToken = sessionToken;
+    req.userDir = sessions[sessionToken].userDir;
+  } else {
+    // New session
+    sessionToken = crypto.randomBytes(16).toString('hex');
     const userDir = path.join(os.tmpdir(), sessionToken);
     
     try {
@@ -98,13 +104,16 @@ app.use((req, res, next) => {
       console.error(`Error creating directory: ${userDir}`, error);
       return next(new Error('Internal Server Error'));
     }
-  } else {
-    console.log(`Existing session: ${sessionToken} at ${sessions[sessionToken].userDir}`);
+
+    req.sessionToken = sessionToken;
+    req.userDir = userDir;
   }
 
-  req.sessionToken = sessionToken;
-  req.userDir = sessions[sessionToken].userDir;
-  res.setHeader('x-session-token', sessionToken);
+  res.cookie('sessionToken', req.sessionToken, { 
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  });
   next();
 });
 

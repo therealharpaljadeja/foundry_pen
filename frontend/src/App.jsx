@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Cookies from 'js-cookie';
 
 const App = () => {
   const [command, setCommand] = useState('');
@@ -10,16 +11,15 @@ const App = () => {
 
   useEffect(() => {
     const fetchSessionToken = async () => {
-      let token = localStorage.getItem('sessionToken');
+      let token = Cookies.get('sessionToken');
       let response;
       
-      const headers = token ? { 'x-session-token': token } : {};
-      response = await fetch('/api/session', { headers });
+      response = await fetch('/api/session');
       const data = await response.json();
       
       if (data.sessionToken !== token) {
         token = data.sessionToken;
-        localStorage.setItem('sessionToken', token);
+        Cookies.set('sessionToken', token, { expires: 1 }); // expires in 1 day
         console.log('New or updated session token:', token);
       }
       
@@ -37,6 +37,12 @@ const App = () => {
     const wsHost = window.location.host;
     ws.current = new WebSocket(`${wsProtocol}://${wsHost}`);
 
+    ws.current.onopen = () => {
+      console.log('WebSocket connection opened, sessionToken:', sessionToken);
+      // Send the session token immediately after connection
+      ws.current.send(JSON.stringify({ type: 'init', sessionToken }));
+    };
+
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log('Received message from server:', data);
@@ -48,10 +54,6 @@ const App = () => {
       setIsExecuting(false);
     };
 
-    ws.current.onopen = () => {
-      console.log('WebSocket connection opened, sessionToken:', sessionToken);
-    };
-
     ws.current.onclose = () => {
       console.log('WebSocket connection closed');
     };
@@ -60,23 +62,6 @@ const App = () => {
       ws.current.close();
     };
   }, [sessionToken]);
-
-  useEffect(() => {
-    if (!isFoundryInstalled && sessionToken) {
-      const checkFoundryStatus = setInterval(async () => {
-        const response = await fetch('/api/session', {
-          headers: { 'x-session-token': sessionToken }
-        });
-        const data = await response.json();
-        if (data.foundryInstalled) {
-          setIsFoundryInstalled(true);
-          clearInterval(checkFoundryStatus);
-        }
-      }, 5000); // Check every 5 seconds
-
-      return () => clearInterval(checkFoundryStatus);
-    }
-  }, [isFoundryInstalled, sessionToken]);
 
   const executeCommand = () => {
     if (command.trim() === '') {
