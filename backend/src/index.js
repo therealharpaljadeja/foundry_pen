@@ -56,6 +56,14 @@ const isFoundryInstalled = () => {
   });
 };
 
+const notifyClientFoundryInstalled = (sessionToken) => {
+    wss.clients.forEach((client) => {
+      if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'foundryInstalled' }));
+      }
+    });
+  };
+
 // Function to install Foundry asynchronously
 const installFoundry = async (userDir, sessionToken) => {
     const alreadyInstalled = await isFoundryInstalled();
@@ -68,34 +76,39 @@ const installFoundry = async (userDir, sessionToken) => {
     }
   
     return new Promise((resolve, reject) => {
-      const child = exec(`bash ${scriptPath}`, { cwd: userDir });
-  
-      let output = '';
-      let errorOutput = '';
-  
-      child.stdout.on('data', (data) => {
-        output += data;
-        console.log(`Foundry installation output for session ${sessionToken}: ${data}`);
+        const child = exec(`bash ${scriptPath}`, { cwd: userDir });
+    
+        let output = '';
+        let errorOutput = '';
+    
+        child.stdout.on('data', (data) => {
+          output += data;
+          console.log(`Foundry installation output for session ${sessionToken}: ${data.trim()}`);
+        });
+    
+        child.stderr.on('data', (data) => {
+          // Check if the data is just progress information
+          if (data.includes('%') || data.includes('#')) {
+            console.log(`Foundry installation progress for session ${sessionToken}: ${data.trim()}`);
+          } else {
+            errorOutput += data;
+            console.error(`Foundry installation error for session ${sessionToken}: ${data.trim()}`);
+          }
+        });
+    
+        child.on('close', (code) => {
+          if (code !== 0) {
+            console.error(`Foundry installation failed for session ${sessionToken} with code ${code}`);
+            sessions[sessionToken].foundryInstalled = false;
+            reject(new Error(`Installation failed with code ${code}: ${errorOutput}`));
+          } else {
+            console.log(`Foundry installation completed successfully for session ${sessionToken}`);
+            sessions[sessionToken].foundryInstalled = true;
+            notifyClientFoundryInstalled(sessionToken);
+            resolve();
+          }
+        });
       });
-  
-      child.stderr.on('data', (data) => {
-        errorOutput += data;
-        console.error(`Foundry installation error output for session ${sessionToken}: ${data}`);
-      });
-  
-      child.on('close', (code) => {
-        if (code !== 0) {
-          console.error(`Foundry installation failed for session ${sessionToken} with code ${code}`);
-          sessions[sessionToken].foundryInstalled = false;
-          reject(new Error(`Installation failed with code ${code}: ${errorOutput}`));
-        } else {
-          console.log(`Foundry installation completed successfully for session ${sessionToken}`);
-          sessions[sessionToken].foundryInstalled = true;
-          notifyClientFoundryInstalled(sessionToken);
-          resolve();
-        }
-      });
-    });
   };
 
 // Middleware to handle session tokens
