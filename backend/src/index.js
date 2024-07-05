@@ -184,7 +184,7 @@ wss.on('connection', (ws, req) => {
       return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
     }
 
-    const { type, command, sessionToken } = parsedMessage;
+    const { type, command, sessionToken, isREPL } = parsedMessage;
 
     if (type === 'init') {
         console.log(`WebSocket connection initialized with sessionToken: ${sessionToken}`);
@@ -217,22 +217,64 @@ wss.on('connection', (ws, req) => {
     console.log(`Executing command in directory: ${session.userDir}`);
     console.log(`Environment PATH: ${env.PATH}`);
 
-    // Execute the command in the user's directory
-    const child = spawn(command, { shell: true, cwd: session.userDir, env });
-
-    child.stdout.on('data', (data) => {
-      ws.send(JSON.stringify({ output: data.toString() }));
-    });
-
-    child.stderr.on('data', (data) => {
-      ws.send(JSON.stringify({ error: data.toString() }));
-    });
-
-    child.on('close', (code) => {
-      ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
-    });
+    if (isREPL) {
+      handleREPLCommand(ws, session, command, env);
+    } else {
+      handleRegularCommand(ws, session, command, env);
+    }
   });
 });
+
+function handleREPLCommand(ws, session, command, env) {
+    if (command.trim().toLowerCase() === 'chisel') {
+      // Start new Chisel REPL process
+      if (!session.replProcess) {
+        session.replProcess = spawn('chisel', [], { cwd: session.userDir, env });
+        
+        session.replProcess.stdout.on('data', (data) => {
+          ws.send(JSON.stringify({ output: data.toString() }));
+        });
+  
+        session.replProcess.stderr.on('data', (data) => {
+          ws.send(JSON.stringify({ error: data.toString() }));
+        });
+  
+        session.replProcess.on('close', (code) => {
+          console.log(`Chisel REPL process exited with code ${code}`);
+          delete session.replProcess;
+          ws.send(JSON.stringify({ output: 'Exited Chisel REPL mode.' }));
+        });
+      } else {
+        ws.send(JSON.stringify({ output: 'Chisel REPL is already running.' }));
+      }
+    } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
+      // Exit REPL mode
+      session.replProcess.stdin.write('.exit\n');
+      session.replProcess.kill();
+      delete session.replProcess;
+    } else if (session.replProcess) {
+      // Send command to REPL
+      session.replProcess.stdin.write(command + '\n');
+    } else {
+      ws.send(JSON.stringify({ error: 'Chisel REPL is not running. Start it with the "chisel" command.' }));
+    }
+  }
+
+function handleRegularCommand(ws, session, command, env) {
+  const child = spawn(command, { shell: true, cwd: session.userDir, env });
+
+  child.stdout.on('data', (data) => {
+    ws.send(JSON.stringify({ output: data.toString() }));
+  });
+
+  child.stderr.on('data', (data) => {
+    ws.send(JSON.stringify({ error: data.toString() }));
+  });
+
+  child.on('close', (code) => {
+    ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
+  });
+}
 
 // Cleanup mechanism to remove old session directories (e.g., run this periodically)
 const cleanupOldSessions = () => {
