@@ -20,6 +20,7 @@ const PORT = process.env.PORT || 5000;
 // Set trust proxy to trust Heroku's reverse proxy
 app.set('trust proxy', 1);
 
+// Middleware setup
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://foundry-pen-86c9c65f23b0.herokuapp.com',
   credentials: true
@@ -29,7 +30,7 @@ app.use(helmet());
 app.use(morgan('combined'));
 app.use(cookieParser());
 
-// Rate limiting
+// Rate limiting to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -56,14 +57,15 @@ const isFoundryInstalled = () => {
   });
 };
 
+// Notify client that Foundry is installed
 const notifyClientFoundryInstalled = (sessionToken) => {
-    console.log(`Notifying client that Foundry is installed for session: ${sessionToken}`);
-    wss.clients.forEach((client) => {
-      if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'foundryInstalled' }));
-      }
-    });
-  };
+  console.log(`Notifying client that Foundry is installed for session: ${sessionToken}`);
+  wss.clients.forEach((client) => {
+    if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'foundryInstalled' }));
+    }
+  });
+};
 
 // Function to install Foundry asynchronously
 const installFoundry = async (userDir, sessionToken) => {
@@ -114,7 +116,7 @@ const installFoundry = async (userDir, sessionToken) => {
 
 // Middleware to handle session tokens
 app.use((req, res, next) => {
-  let sessionToken = req.headers['x-session-token'] || req.cookies.sessionToken;
+  let sessionToken = req.cookies.sessionToken; // Removed reference to req.headers['x-session-token']
 
   if (sessionToken && sessions[sessionToken]) {
     // Existing session
@@ -173,7 +175,9 @@ const server = app.listen(PORT, () => {
 
 const wss = new WebSocket.Server({ server });
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws) => {
+  console.log('WebSocket connection opened');
+  
   ws.on('message', (message) => {
     let parsedMessage;
 
@@ -193,20 +197,51 @@ wss.on('connection', (ws, req) => {
       return ws.send(JSON.stringify({ error: 'Invalid session token' }));
     }
 
+    // Log session and installation state
+    console.log(`Session ${sessionToken}: Foundry installed = ${session.foundryInstalled}`);
+
     // Check if Foundry is installed
     if (!session.foundryInstalled) {
+      console.log(`Session ${sessionToken}: Foundry is still being installed. Please wait.`);
       return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
     }
 
+    if (type === 'init') {
+      // Handle initialization logic if needed
+      console.log(`Session ${sessionToken}: Initialization message received`);
+      return; // Do not process further for init messages
+    }
+
     // Handle the command
-    if (command && command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
-      handleREPLCommand(ws, session, command, process.env);
-    } else if (session.replProcess) {
-      handleREPLCommand(ws, session, command, process.env);
+    if (command) {
+      if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
+        handleREPLCommand(ws, session, command, process.env);
+      } else if (session.replProcess) {
+        handleREPLCommand(ws, session, command, process.env);
+      } else {
+        handleRegularCommand(ws, session, command, process.env);
+      }
     } else {
-      handleRegularCommand(ws, session, command, process.env);
+      console.log(`No command provided for session ${sessionToken}`);
     }
   });
+
+  ws.on('close', () => {
+    console.log('WebSocket connection closed');
+  });
+
+  ws.on('error', (error) => {
+    console.error('WebSocket error:', error);
+  });
+
+  // Implement heartbeat
+  const interval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'heartbeat' }));
+    } else {
+      clearInterval(interval);
+    }
+  }, 30000); // 30 seconds
 });
 
 function handleREPLCommand(ws, session, command, env) {
@@ -232,61 +267,59 @@ function handleREPLCommand(ws, session, command, env) {
     });
 
     session.replProcess.on('close', (code) => {
-      console.log(`Chisel REPL process exited with code ${code}`);
-      delete session.replProcess;
-      delete session.replReady;
-      ws.send(JSON.stringify({ type: 'replClosed' }));
-    });
-
-    ws.send(JSON.stringify({ type: 'replStarting' }));
-  } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
+      console.log(`ChiselREPL process exited with code ${code}`);
+delete session.replProcess;
+delete session.replReady;
+ws.send(JSON.stringify({ type: 'replClosed' }));
+});
+} else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
     console.log('Exiting Chisel REPL');
     session.replProcess.stdin.write('.exit\n');
     session.replProcess.kill();
     delete session.replProcess;
     delete session.replReady;
     ws.send(JSON.stringify({ type: 'replClosed' }));
-  } else if (session.replProcess) {
+    } else if (session.replProcess) {
     if (session.replReady) {
-      console.log('Sending command to Chisel REPL:', command);
-      session.replProcess.stdin.write(command + '\n');
+    console.log('Sending command to Chisel REPL:', command);
+    session.replProcess.stdin.write(command + '\n');
     } else {
-      console.log('Chisel REPL is not ready yet');
-      ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
+    console.log('Chisel REPL is not ready yet');
+    ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
     }
-  }
-}
-
-function handleRegularCommand(ws, session, command, env) {
-  const child = spawn(command, { shell: true, cwd: session.userDir, env });
-
-  child.stdout.on('data', (data) => {
+    }
+    }
+    
+    function handleRegularCommand(ws, session, command, env) {
+    const child = spawn(command, { shell: true, cwd: session.userDir, env });
+    
+    child.stdout.on('data', (data) => {
     ws.send(JSON.stringify({ output: data.toString() }));
-  });
-
-  child.stderr.on('data', (data) => {
+    });
+    
+    child.stderr.on('data', (data) => {
     ws.send(JSON.stringify({ error: data.toString() }));
-  });
-
-  child.on('close', (code) => {
+    });
+    
+    child.on('close', (code) => {
     ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
-  });
-}
-
-// Cleanup mechanism to remove old session directories (e.g., run this periodically)
-const cleanupOldSessions = () => {
-  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-  const now = Date.now();
-
-  for (const sessionToken in sessions) {
+    });
+    }
+    
+    // Cleanup mechanism to remove old session directories (e.g., run this periodically)
+    const cleanupOldSessions = () => {
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const now = Date.now();
+    
+    for (const sessionToken in sessions) {
     const sessionDir = sessions[sessionToken].userDir;
     const stats = fs.statSync(sessionDir);
     if (now - stats.ctimeMs > maxAge) {
-      fs.rmdirSync(sessionDir, { recursive: true });
-      delete sessions[sessionToken];
+    fs.rmdirSync(sessionDir, { recursive: true });
+    delete sessions[sessionToken];
     }
-  }
-};
-
-// Run cleanup every hour
-setInterval(cleanupOldSessions, 60 * 60 * 1000);
+    }
+    };
+    
+    // Run cleanup every hour
+    setInterval(cleanupOldSessions, 60 * 60 * 1000);

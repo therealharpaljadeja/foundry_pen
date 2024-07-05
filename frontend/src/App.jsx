@@ -19,21 +19,21 @@ const App = () => {
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-2">Step 2: Initialize a New Foundry Project</h2>
               <p className="mb-4">Now, let's create a new Foundry project. Run the following command:</p>
-              <FoundryTerminal />
+              {/* <FoundryTerminal /> */}
               <p className="mt-2 text-sm text-gray-600">This will create a new Foundry project in the current directory.</p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-2">Step 3: Explore the Project Structure</h2>
               <p className="mb-4">Let's see what files and directories were created. Use the ls command:</p>
-              <FoundryTerminal />
+              {/* <FoundryTerminal /> */}
               <p className="mt-2 text-sm text-gray-600">You should see the typical Foundry project structure, including directories like 'src' and 'test'.</p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-2">Step 4: Compile the Project</h2>
               <p className="mb-4">Now, let's compile the Solidity contracts in our project:</p>
-              <FoundryTerminal />
+              {/* <FoundryTerminal /> */}
               <p className="mt-2 text-sm text-gray-600">This will compile all contracts in the 'src' directory.</p>
             </section>
 

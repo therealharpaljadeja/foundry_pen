@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import Convert from 'ansi-to-html';
-import io from 'socket.io-client';
 
 const convert = new Convert({ newline: true });
 
@@ -66,10 +65,12 @@ const FoundryTerminal = () => {
         setIsREPLMode(false);
         setIsREPLReady(false);
         addToHistory('system', 'Exited Chisel REPL mode.');
-      } else if (data.error) {
+      } else if (data.error && isExecuting) { // Only add error to history if executing a command
         addToHistory('error', data.error);
       } else if (data.output) {
         addToHistory('output', data.output);
+      } else {
+        console.log('Unhandled message from server:', data); // Log unhandled messages for debugging
       }
       setIsExecuting(false);
       if (inputRef.current) {
@@ -79,6 +80,10 @@ const FoundryTerminal = () => {
 
     ws.current.onclose = () => {
       console.log('WebSocket connection closed');
+    };
+
+    ws.current.onerror = (error) => {
+      console.error('WebSocket error:', error);
     };
 
     return () => {
@@ -104,26 +109,16 @@ const FoundryTerminal = () => {
     setIsExecuting(true);
     console.log('Executing command, sessionToken:', sessionToken);
 
-    const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/command`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ sessionToken, command }),
-    });
+    ws.current.send(JSON.stringify({ type: 'command', sessionToken, command })); // Send command message
 
-    if (response.ok) {
-      if (command.trim().toLowerCase() === 'chisel') {
-        setIsREPLMode(true);
-        addToHistory('command', command);
-      } else if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
-        setIsREPLMode(false);
-        setIsREPLReady(false);
-      } else {
-        addToHistory('command', command);
-      }
+    if (command.trim().toLowerCase() === 'chisel') {
+      setIsREPLMode(true);
+      addToHistory('command', command);
+    } else if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
+      setIsREPLMode(false);
+      setIsREPLReady(false);
     } else {
-      addToHistory('error', 'Failed to send command');
+      addToHistory('command', command);
     }
 
     setCommand('');
@@ -157,16 +152,16 @@ const FoundryTerminal = () => {
       {isREPLMode && !isREPLReady && (
         <p className="text-yellow-500 text-sm mb-2">Chisel REPL is starting. Please wait...</p>
       )}
-      <div 
+      <div
         ref={terminalRef}
         className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
       >
         {history.map((item, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className={`mb-1 ${
-              item.type === 'command' ? 'text-green-400' : 
-              item.type === 'error' ? 'text-red-400' : 
+              item.type === 'command' ? 'text-green-400' :
+              item.type === 'error' ? 'text-red-400' :
               item.type === 'system' ? 'text-yellow-300' :
               'text-gray-300'
             }`}
