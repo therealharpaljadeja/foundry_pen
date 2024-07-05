@@ -9,6 +9,9 @@ export default defineConfig({
       external: ['js-cookie']
     }
   },
+  optimizeDeps: {
+    include: ['js-cookie']
+  },
   server: {
     proxy: {
       '/api': 'http://localhost:5000'
