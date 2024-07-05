@@ -57,12 +57,13 @@ const isFoundryInstalled = () => {
 };
 
 const notifyClientFoundryInstalled = (sessionToken) => {
-  wss.clients.forEach((client) => {
-    if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'foundryInstalled' }));
-    }
-  });
-};
+    console.log(`Notifying client that Foundry is installed for session: ${sessionToken}`);
+    wss.clients.forEach((client) => {
+      if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type: 'foundryInstalled' }));
+      }
+    });
+  };
 
 // Function to install Foundry asynchronously
 const installFoundry = async (userDir, sessionToken) => {
@@ -198,7 +199,7 @@ wss.on('connection', (ws, req) => {
     }
 
     // Handle the command
-    if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
+    if (command && command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
       handleREPLCommand(ws, session, command, process.env);
     } else if (session.replProcess) {
       handleREPLCommand(ws, session, command, process.env);
