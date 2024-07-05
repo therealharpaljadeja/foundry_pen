@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import Convert from 'ansi-to-html';
+import io from 'socket.io-client';
 
 const convert = new Convert({ newline: true });
 
@@ -20,16 +21,16 @@ const FoundryTerminal = () => {
     const fetchSessionToken = async () => {
       let token = Cookies.get('sessionToken');
       let response;
-      
+
       response = await fetch('/api/session');
       const data = await response.json();
-      
+
       if (data.sessionToken !== token) {
         token = data.sessionToken;
         Cookies.set('sessionToken', token, { expires: 1 });
         console.log('New or updated session token:', token);
       }
-      
+
       setSessionToken(token);
       setIsFoundryInstalled(data.foundryInstalled);
     };
@@ -59,7 +60,6 @@ const FoundryTerminal = () => {
         setIsREPLReady(false);
         addToHistory('system', 'Chisel REPL is starting. Please wait...');
       } else if (data.type === 'replReady') {
-        setIsREPLMode(true);
         setIsREPLReady(true);
         addToHistory('system', 'Chisel REPL is ready.');
       } else if (data.type === 'replClosed') {
@@ -103,21 +103,30 @@ const FoundryTerminal = () => {
 
     setIsExecuting(true);
     console.log('Executing command, sessionToken:', sessionToken);
-    
-    if (ws.current.readyState === WebSocket.OPEN) {
-      addToHistory('command', command);
 
-      ws.current.send(JSON.stringify({ command, sessionToken }));
-      
-      if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
+    const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/command`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionToken, command }),
+    });
+
+    if (response.ok) {
+      if (command.trim().toLowerCase() === 'chisel') {
+        setIsREPLMode(true);
+        addToHistory('command', command);
+      } else if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
         setIsREPLMode(false);
         setIsREPLReady(false);
+      } else {
+        addToHistory('command', command);
       }
-
-      setCommand('');
     } else {
-      addToHistory('error', 'WebSocket connection is not open');
+      addToHistory('error', 'Failed to send command');
     }
+
+    setCommand('');
     setIsExecuting(false);
   };
 

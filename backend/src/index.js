@@ -21,9 +21,9 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://foundry-pen-86c9c65f23b0.herokuapp.com',
-    credentials: true
-  }));
+  origin: process.env.FRONTEND_URL || 'https://foundry-pen-86c9c65f23b0.herokuapp.com',
+  credentials: true
+}));
 app.use(express.json());
 app.use(helmet());
 app.use(morgan('combined'));
@@ -57,59 +57,59 @@ const isFoundryInstalled = () => {
 };
 
 const notifyClientFoundryInstalled = (sessionToken) => {
-    wss.clients.forEach((client) => {
-      if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'foundryInstalled' }));
-      }
-    });
-  };
+  wss.clients.forEach((client) => {
+    if (client.sessionToken === sessionToken && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'foundryInstalled' }));
+    }
+  });
+};
 
 // Function to install Foundry asynchronously
 const installFoundry = async (userDir, sessionToken) => {
-    const alreadyInstalled = await isFoundryInstalled();
-    
-    if (alreadyInstalled) {
-      console.log(`Foundry is already installed for session ${sessionToken}`);
-      sessions[sessionToken].foundryInstalled = true;
-      notifyClientFoundryInstalled(sessionToken);
-      return;
-    }
-  
-    return new Promise((resolve, reject) => {
-        const child = exec(`bash ${scriptPath}`, { cwd: userDir });
-    
-        let output = '';
-        let errorOutput = '';
-    
-        child.stdout.on('data', (data) => {
-          output += data;
-          console.log(`Foundry installation output for session ${sessionToken}: ${data.trim()}`);
-        });
-    
-        child.stderr.on('data', (data) => {
-          // Check if the data is just progress information
-          if (data.includes('%') || data.includes('#')) {
-            console.log(`Foundry installation progress for session ${sessionToken}: ${data.trim()}`);
-          } else {
-            errorOutput += data;
-            console.error(`Foundry installation error for session ${sessionToken}: ${data.trim()}`);
-          }
-        });
-    
-        child.on('close', (code) => {
-          if (code !== 0) {
-            console.error(`Foundry installation failed for session ${sessionToken} with code ${code}`);
-            sessions[sessionToken].foundryInstalled = false;
-            reject(new Error(`Installation failed with code ${code}: ${errorOutput}`));
-          } else {
-            console.log(`Foundry installation completed successfully for session ${sessionToken}`);
-            sessions[sessionToken].foundryInstalled = true;
-            notifyClientFoundryInstalled(sessionToken);
-            resolve();
-          }
-        });
-      });
-  };
+  const alreadyInstalled = await isFoundryInstalled();
+
+  if (alreadyInstalled) {
+    console.log(`Foundry is already installed for session ${sessionToken}`);
+    sessions[sessionToken].foundryInstalled = true;
+    notifyClientFoundryInstalled(sessionToken);
+    return;
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = exec(`bash ${scriptPath}`, { cwd: userDir });
+
+    let output = '';
+    let errorOutput = '';
+
+    child.stdout.on('data', (data) => {
+      output += data;
+      console.log(`Foundry installation output for session ${sessionToken}: ${data.trim()}`);
+    });
+
+    child.stderr.on('data', (data) => {
+      // Check if the data is just progress information
+      if (data.includes('%') || data.includes('#')) {
+        console.log(`Foundry installation progress for session ${sessionToken}: ${data.trim()}`);
+      } else {
+        errorOutput += data;
+        console.error(`Foundry installation error for session ${sessionToken}: ${data.trim()}`);
+      }
+    });
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`Foundry installation failed for session ${sessionToken} with code ${code}`);
+        sessions[sessionToken].foundryInstalled = false;
+        reject(new Error(`Installation failed with code ${code}: ${errorOutput}`));
+      } else {
+        console.log(`Foundry installation completed successfully for session ${sessionToken}`);
+        sessions[sessionToken].foundryInstalled = true;
+        notifyClientFoundryInstalled(sessionToken);
+        resolve();
+      }
+    });
+  });
+};
 
 // Middleware to handle session tokens
 app.use((req, res, next) => {
@@ -124,7 +124,7 @@ app.use((req, res, next) => {
     // New session
     sessionToken = crypto.randomBytes(16).toString('hex');
     const userDir = path.join(os.tmpdir(), sessionToken);
-    
+
     try {
       fs.mkdirSync(userDir, { recursive: true });
       sessions[sessionToken] = { userDir, foundryInstalled: false };
@@ -141,8 +141,8 @@ app.use((req, res, next) => {
     req.userDir = userDir;
   }
 
-  res.cookie('sessionToken', req.sessionToken, { 
-    httpOnly: true, 
+  res.cookie('sessionToken', req.sessionToken, {
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   });
@@ -154,7 +154,7 @@ app.use(express.static(path.join(__dirname, '../../frontend/dist')));
 
 // API route to get session token and Foundry installation status
 app.get('/api/session', (req, res) => {
-  res.json({ 
+  res.json({
     sessionToken: req.sessionToken,
     foundryInstalled: sessions[req.sessionToken].foundryInstalled
   });
@@ -173,104 +173,104 @@ const server = app.listen(PORT, () => {
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, req) => {
-    ws.on('message', (message) => {
-      let parsedMessage;
-  
-      try {
-        parsedMessage = JSON.parse(message);
-      } catch (error) {
-        console.error('Invalid JSON message received:', message);
-        return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
-      }
-  
-      const { type, command, sessionToken } = parsedMessage;
-  
-      // Validate the session token
-      const session = sessions[sessionToken];
-      if (!session) {
-        console.log(`Invalid session token: ${sessionToken}`);
-        return ws.send(JSON.stringify({ error: 'Invalid session token' }));
-      }
-  
-      // Check if Foundry is installed
-      if (!session.foundryInstalled) {
-        return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
-      }
-  
-      // Handle the command
-      if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
-        handleREPLCommand(ws, session, command, process.env);
-      } else if (session.replProcess) {
-        handleREPLCommand(ws, session, command, process.env);
-      } else {
-        handleRegularCommand(ws, session, command, process.env);
+  ws.on('message', (message) => {
+    let parsedMessage;
+
+    try {
+      parsedMessage = JSON.parse(message);
+    } catch (error) {
+      console.error('Invalid JSON message received:', message);
+      return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
+    }
+
+    const { type, command, sessionToken } = parsedMessage;
+
+    // Validate the session token
+    const session = sessions[sessionToken];
+    if (!session) {
+      console.log(`Invalid session token: ${sessionToken}`);
+      return ws.send(JSON.stringify({ error: 'Invalid session token' }));
+    }
+
+    // Check if Foundry is installed
+    if (!session.foundryInstalled) {
+      return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
+    }
+
+    // Handle the command
+    if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
+      handleREPLCommand(ws, session, command, process.env);
+    } else if (session.replProcess) {
+      handleREPLCommand(ws, session, command, process.env);
+    } else {
+      handleRegularCommand(ws, session, command, process.env);
+    }
+  });
+});
+
+function handleREPLCommand(ws, session, command, env) {
+  if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
+    console.log('Starting new Chisel REPL process');
+    session.replProcess = spawn('chisel', [], { cwd: session.userDir, env, stdio: ['pipe', 'pipe', 'pipe'] });
+    session.replReady = false;
+
+    session.replProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log('REPL output:', output);
+      ws.send(JSON.stringify({ output }));
+      if (output.includes('Welcome to Chisel')) {
+        session.replReady = true;
+        console.log('Chisel REPL is ready');
+        ws.send(JSON.stringify({ type: 'replReady' }));
       }
     });
-  });
-  
-  function handleREPLCommand(ws, session, command, env) {
-    if (command.trim().toLowerCase() === 'chisel' && !session.replProcess) {
-      console.log('Starting new Chisel REPL process');
-      session.replProcess = spawn('chisel', [], { cwd: session.userDir, env, stdio: ['pipe', 'pipe', 'pipe'] });
-      session.replReady = false;
-  
-      session.replProcess.stdout.on('data', (data) => {
-        const output = data.toString();
-        console.log('REPL output:', output);
-        ws.send(JSON.stringify({ output }));
-        if (output.includes('Welcome to Chisel')) {
-          session.replReady = true;
-          console.log('Chisel REPL is ready');
-          ws.send(JSON.stringify({ type: 'replReady' }));
-        }
-      });
-  
-      session.replProcess.stderr.on('data', (data) => {
-        console.error('REPL error:', data.toString());
-        ws.send(JSON.stringify({ error: data.toString() }));
-      });
-  
-      session.replProcess.on('close', (code) => {
-        console.log(`Chisel REPL process exited with code ${code}`);
-        delete session.replProcess;
-        delete session.replReady;
-        ws.send(JSON.stringify({ type: 'replClosed' }));
-      });
-  
-      ws.send(JSON.stringify({ type: 'replStarting' }));
-    } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
-      console.log('Exiting Chisel REPL');
-      session.replProcess.stdin.write('.exit\n');
-      session.replProcess.kill();
+
+    session.replProcess.stderr.on('data', (data) => {
+      console.error('REPL error:', data.toString());
+      ws.send(JSON.stringify({ error: data.toString() }));
+    });
+
+    session.replProcess.on('close', (code) => {
+      console.log(`Chisel REPL process exited with code ${code}`);
       delete session.replProcess;
       delete session.replReady;
       ws.send(JSON.stringify({ type: 'replClosed' }));
-    } else if (session.replProcess) {
-      if (session.replReady) {
-        console.log('Sending command to Chisel REPL:', command);
-        session.replProcess.stdin.write(command + '\n');
-      } else {
-        console.log('Chisel REPL is not ready yet');
-        ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
-      }
+    });
+
+    ws.send(JSON.stringify({ type: 'replStarting' }));
+  } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
+    console.log('Exiting Chisel REPL');
+    session.replProcess.stdin.write('.exit\n');
+    session.replProcess.kill();
+    delete session.replProcess;
+    delete session.replReady;
+    ws.send(JSON.stringify({ type: 'replClosed' }));
+  } else if (session.replProcess) {
+    if (session.replReady) {
+      console.log('Sending command to Chisel REPL:', command);
+      session.replProcess.stdin.write(command + '\n');
+    } else {
+      console.log('Chisel REPL is not ready yet');
+      ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
     }
   }
-  
-  function handleRegularCommand(ws, session, command, env) {
-    const child = spawn(command, { shell: true, cwd: session.userDir, env });
-  
-    child.stdout.on('data', (data) => {
-      ws.send(JSON.stringify({ output: data.toString() }));
-    });
-  
-    child.stderr.on('data', (data) => {
-      ws.send(JSON.stringify({ error: data.toString() }));
-    });
-  
-    child.on('close', (code) => {
-      ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
-    });
-  }
+}
+
+function handleRegularCommand(ws, session, command, env) {
+  const child = spawn(command, { shell: true, cwd: session.userDir, env });
+
+  child.stdout.on('data', (data) => {
+    ws.send(JSON.stringify({ output: data.toString() }));
+  });
+
+  child.stderr.on('data', (data) => {
+    ws.send(JSON.stringify({ error: data.toString() }));
+  });
+
+  child.on('close', (code) => {
+    ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
+  });
+}
 
 // Cleanup mechanism to remove old session directories (e.g., run this periodically)
 const cleanupOldSessions = () => {
