@@ -54,6 +54,17 @@ const FoundryTerminal = () => {
       console.log('Received message from server:', data);
       if (data.type === 'foundryInstalled') {
         setIsFoundryInstalled(true);
+      } else if (data.type === 'replStarting') {
+        setIsREPLMode(true);
+        setIsREPLReady(false);
+        addToHistory('system', 'Chisel REPL is starting. Please wait...');
+      } else if (data.type === 'replReady') {
+        setIsREPLReady(true);
+        addToHistory('system', 'Chisel REPL is ready.');
+      } else if (data.type === 'replClosed') {
+        setIsREPLMode(false);
+        setIsREPLReady(false);
+        addToHistory('system', 'Exited Chisel REPL mode.');
       } else if (data.error) {
         addToHistory('error', data.error);
       } else if (data.output) {
@@ -95,14 +106,9 @@ const FoundryTerminal = () => {
     if (ws.current.readyState === WebSocket.OPEN) {
       addToHistory('command', command);
 
-      if (command.trim().toLowerCase() === 'chisel' && !isREPLMode) {
-        setIsREPLMode(true);
-        setIsREPLReady(false);
-      }
-
       ws.current.send(JSON.stringify({ command, sessionToken, isREPL: isREPLMode }));
       
-      if (isREPLMode && command.trim().toLowerCase() === 'exit') {
+      if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
         setIsREPLMode(false);
         setIsREPLReady(false);
       }
@@ -113,36 +119,6 @@ const FoundryTerminal = () => {
     }
     setIsExecuting(false);
   };
-
-  useEffect(() => {
-    if (!ws.current) return;
-
-    const handleMessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'replStarting') {
-        setIsREPLReady(false);
-        addToHistory('system', 'Chisel REPL is starting. Please wait...');
-      } else if (data.type === 'replReady') {
-        setIsREPLReady(true);
-        addToHistory('system', 'Chisel REPL is ready.');
-      } else if (data.type === 'replClosed') {
-        setIsREPLMode(false);
-        setIsREPLReady(false);
-        addToHistory('system', 'Exited Chisel REPL mode.');
-      } else if (data.error) {
-        addToHistory('error', data.error);
-      } else if (data.output) {
-        addToHistory('output', data.output);
-      }
-      setIsExecuting(false);
-    };
-
-    ws.current.addEventListener('message', handleMessage);
-
-    return () => {
-      ws.current.removeEventListener('message', handleMessage);
-    };
-  }, [ws.current]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !isExecuting && isFoundryInstalled) {

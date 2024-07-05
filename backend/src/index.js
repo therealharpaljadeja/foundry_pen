@@ -259,12 +259,13 @@ wss.on('connection', (ws, req) => {
         });
   
         ws.send(JSON.stringify({ type: 'replStarting' }));
-      } else if (session.replReady) {
-        console.log('Chisel REPL is already running and ready');
-        ws.send(JSON.stringify({ type: 'replReady' }));
       } else {
-        console.log('Chisel REPL is starting up');
-        ws.send(JSON.stringify({ type: 'replStarting' }));
+        console.log('Chisel REPL is already running or starting');
+        if (session.replReady) {
+          ws.send(JSON.stringify({ type: 'replReady' }));
+        } else {
+          ws.send(JSON.stringify({ type: 'replStarting' }));
+        }
       }
     } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
       console.log('Exiting Chisel REPL');
@@ -273,12 +274,14 @@ wss.on('connection', (ws, req) => {
       delete session.replProcess;
       delete session.replReady;
       ws.send(JSON.stringify({ type: 'replClosed' }));
-    } else if (session.replProcess && session.replReady) {
-      console.log('Sending command to Chisel REPL:', command);
-      session.replProcess.stdin.write(command + '\n');
-    } else if (session.replProcess && !session.replReady) {
-      console.log('Chisel REPL is not ready yet');
-      ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
+    } else if (session.replProcess) {
+      if (session.replReady) {
+        console.log('Sending command to Chisel REPL:', command);
+        session.replProcess.stdin.write(command + '\n');
+      } else {
+        console.log('Chisel REPL is not ready yet');
+        ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
+      }
     } else {
       console.log('Chisel REPL is not running');
       ws.send(JSON.stringify({ error: 'Chisel REPL is not running. Start it with the "chisel" command.' }));
