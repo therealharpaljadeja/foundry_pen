@@ -9,9 +9,6 @@ const FoundryTerminal = () => {
   const [history, setHistory] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
-  const [isREPLMode, setIsREPLMode] = useState(false);
-  const [isREPLReady, setIsREPLReady] = useState(false);
-  const ws = useRef(null);
   const [sessionToken, setSessionToken] = useState(null);
   const terminalRef = useRef(null);
   const inputRef = useRef(null);
@@ -20,78 +17,22 @@ const FoundryTerminal = () => {
     const fetchSessionToken = async () => {
       let token = Cookies.get('sessionToken');
       let response;
-
+      
       response = await fetch('/api/session');
       const data = await response.json();
-
+      
       if (data.sessionToken !== token) {
         token = data.sessionToken;
         Cookies.set('sessionToken', token, { expires: 1 });
         console.log('New or updated session token:', token);
       }
-
+      
       setSessionToken(token);
       setIsFoundryInstalled(data.foundryInstalled);
     };
 
     fetchSessionToken();
   }, []);
-
-  useEffect(() => {
-    if (!sessionToken) return;
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsHost = window.location.host;
-    ws.current = new WebSocket(`${wsProtocol}://${wsHost}`);
-
-    ws.current.onopen = () => {
-      console.log('WebSocket connection opened, sessionToken:', sessionToken);
-      ws.current.send(JSON.stringify({ type: 'init', sessionToken }));
-    };
-
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log('Received message from server:', data);
-      if (data.type === 'foundryInstalled') {
-        setIsFoundryInstalled(true);
-      } else if (data.type === 'replStarting') {
-        setIsREPLMode(true);
-        setIsREPLReady(false);
-        addToHistory('system', 'Chisel REPL is starting. Please wait...');
-      } else if (data.type === 'replReady') {
-        setIsREPLReady(true);
-        addToHistory('system', 'Chisel REPL is ready.');
-      } else if (data.type === 'replClosed') {
-        setIsREPLMode(false);
-        setIsREPLReady(false);
-        addToHistory('system', 'Exited Chisel REPL mode.');
-      } else if (data.error && isExecuting) { // Only add error to history if executing a command
-        addToHistory('error', data.error);
-      } else if (data.output) {
-        addToHistory('output', data.output);
-      } else {
-        console.log('Unhandled message from server:', data); // Log unhandled messages for debugging
-      }
-      setIsExecuting(false);
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    };
-
-    ws.current.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
-
-    ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, [sessionToken]);
 
   const addToHistory = (type, content) => {
     const htmlContent = convert.toHtml(content);
@@ -107,22 +48,36 @@ const FoundryTerminal = () => {
     }
 
     setIsExecuting(true);
-    console.log('Executing command, sessionToken:', sessionToken);
+    addToHistory('command', command);
 
-    ws.current.send(JSON.stringify({ type: 'command', sessionToken, command })); // Send command message
+    try {
+      const response = await fetch('/api/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionToken
+        },
+        body: JSON.stringify({ command })
+      });
 
-    if (command.trim().toLowerCase() === 'chisel') {
-      setIsREPLMode(true);
-      addToHistory('command', command);
-    } else if (command.trim().toLowerCase() === 'exit' && isREPLMode) {
-      setIsREPLMode(false);
-      setIsREPLReady(false);
-    } else {
-      addToHistory('command', command);
+      const data = await response.json();
+
+      if (data.error) {
+        addToHistory('error', data.error);
+      }
+      if (data.output) {
+        addToHistory('output', data.output);
+      }
+      addToHistory('system', `Command finished with exit code ${data.exitCode}`);
+    } catch (error) {
+      addToHistory('error', `Failed to execute command: ${error.message}`);
     }
 
     setCommand('');
     setIsExecuting(false);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -142,26 +97,23 @@ const FoundryTerminal = () => {
   }, [history]);
 
   return (
-    <div className={`bg-gray-900 text-gray-100 p-4 rounded-lg shadow-lg ${isREPLMode ? 'border-2 border-green-500' : ''}`}>
+    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg shadow-lg">
       <h2 className="text-xl font-semibold text-blue-400 mb-2">
-        Foundry Command Line {isREPLMode && <span className="text-green-500">(Chisel REPL Mode)</span>}
+        Foundry Command Line
       </h2>
       {!isFoundryInstalled && (
         <p className="text-yellow-500 text-sm mb-2">Foundry is being installed. Please wait...</p>
       )}
-      {isREPLMode && !isREPLReady && (
-        <p className="text-yellow-500 text-sm mb-2">Chisel REPL is starting. Please wait...</p>
-      )}
-      <div
+      <div 
         ref={terminalRef}
         className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
       >
         {history.map((item, index) => (
-          <div
-            key={index}
+          <div 
+            key={index} 
             className={`mb-1 ${
-              item.type === 'command' ? 'text-green-400' :
-              item.type === 'error' ? 'text-red-400' :
+              item.type === 'command' ? 'text-green-400' : 
+              item.type === 'error' ? 'text-red-400' : 
               item.type === 'system' ? 'text-yellow-300' :
               'text-gray-300'
             }`}
@@ -170,15 +122,15 @@ const FoundryTerminal = () => {
         ))}
       </div>
       <div className="flex items-center bg-gray-800 rounded-lg p-2">
-        <span className="text-green-400 mr-2">{isREPLMode ? 'chisel>' : '>'}</span>
+        <span className="text-green-400 mr-2"></span>
         <input
           ref={inputRef}
           type="text"
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isREPLMode ? "Enter Chisel command (type 'exit' to leave)" : "Enter Foundry command"}
-          disabled={isExecuting || !isFoundryInstalled || (isREPLMode && !isREPLReady)}
+          placeholder="Enter Foundry command"
+          disabled={isExecuting || !isFoundryInstalled}
           className="bg-transparent flex-grow outline-none text-gray-100 placeholder-gray-500 text-sm"
         />
       </div>
