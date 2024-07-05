@@ -55,6 +55,10 @@ const App = () => {
         addToHistory('output', data.output);
       }
       setIsExecuting(false);
+
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     };
 
     ws.current.onclose = () => {
@@ -106,6 +110,10 @@ const App = () => {
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
   }, [history]);
 
