@@ -48,7 +48,7 @@ const App = () => {
       console.log('Received message from server:', data);
       if (data.error) {
         setOutput((prev) => prev + '\n' + data.error);
-      } else {
+      } else if (data.output){
         setOutput((prev) => prev + '\n' + data.output);
       }
       setIsExecuting(false);
@@ -59,7 +59,9 @@ const App = () => {
     };
 
     return () => {
-      ws.current.close();
+      if (ws.current){
+        ws.current.close();
+      }
     };
   }, [sessionToken]);
 

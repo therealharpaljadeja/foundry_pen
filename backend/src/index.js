@@ -155,9 +155,12 @@ wss.on('connection', (ws, req) => {
       return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
     }
 
-    const { command, sessionToken } = parsedMessage;
-    console.log(`Received command: ${command}, sessionToken: ${sessionToken}`);
+    const { type, command, sessionToken } = parsedMessage;
 
+    if (type === 'init') {
+        console.log(`WebSocket connection initialized with sessionToken: ${sessionToken}`);
+        return;
+    }
     // Validate the command input
     if (!command || typeof command !== 'string') {
       return ws.send(JSON.stringify({ error: 'Invalid command input' }));
