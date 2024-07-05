@@ -20,6 +20,9 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
+
 const sessions = {};
 
 const scriptPath = path.resolve(__dirname, 'install_foundry.sh');
@@ -162,6 +165,10 @@ app.post('/api/execute', (req, res) => {
     });
   });
 });
+
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
+  });
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
