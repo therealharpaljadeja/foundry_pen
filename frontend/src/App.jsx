@@ -9,6 +9,7 @@ const App = () => {
   const ws = useRef(null);
   const [sessionToken, setSessionToken] = useState(null);
   const terminalRef = useRef(null);
+  const inputRef = useRef(null); 
 
   useEffect(() => {
     const fetchSessionToken = async () => {
@@ -85,13 +86,19 @@ const App = () => {
       ws.current.send(JSON.stringify({ command, sessionToken }));
       setCommand('');
       setIsExecuting(true);
+      
+      // Focus the input field after executing the command
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     } else {
       addToHistory('error', 'WebSocket connection is not open');
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !isExecuting && isFoundryInstalled) {
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isExecuting && isFoundryInstalled) {
+      e.preventDefault();
       executeCommand();
     }
   };
@@ -120,10 +127,11 @@ const App = () => {
         <div className="flex items-center">
           <span className="text-green-400 mr-2">&gt;</span>
           <input
+            ref={inputRef}
             type="text"
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Enter command"
             disabled={isExecuting || !isFoundryInstalled}
             className="bg-transparent flex-grow outline-none"
