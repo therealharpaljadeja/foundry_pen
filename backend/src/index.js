@@ -58,29 +58,45 @@ const isFoundryInstalled = () => {
 
 // Function to install Foundry asynchronously
 const installFoundry = async (userDir, sessionToken) => {
-  const alreadyInstalled = await isFoundryInstalled();
+    const alreadyInstalled = await isFoundryInstalled();
+    
+    if (alreadyInstalled) {
+      console.log(`Foundry is already installed for session ${sessionToken}`);
+      sessions[sessionToken].foundryInstalled = true;
+      notifyClientFoundryInstalled(sessionToken);
+      return;
+    }
   
-  if (alreadyInstalled) {
-    console.log(`Foundry is already installed for session ${sessionToken}`);
-    sessions[sessionToken].foundryInstalled = true;
-    return;
-  }
-
-  return new Promise((resolve, reject) => {
-    exec(`bash ${scriptPath}`, { cwd: userDir }, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error during Foundry installation for session ${sessionToken}: ${error}`);
-        sessions[sessionToken].foundryInstalled = false;
-        reject(error);
-      } else {
-        console.log(`Foundry installation output for session ${sessionToken}: ${stdout}`);
-        console.error(`Foundry installation error output for session ${sessionToken}: ${stderr}`);
-        sessions[sessionToken].foundryInstalled = true;
-        resolve();
-      }
+    return new Promise((resolve, reject) => {
+      const child = exec(`bash ${scriptPath}`, { cwd: userDir });
+  
+      let output = '';
+      let errorOutput = '';
+  
+      child.stdout.on('data', (data) => {
+        output += data;
+        console.log(`Foundry installation output for session ${sessionToken}: ${data}`);
+      });
+  
+      child.stderr.on('data', (data) => {
+        errorOutput += data;
+        console.error(`Foundry installation error output for session ${sessionToken}: ${data}`);
+      });
+  
+      child.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`Foundry installation failed for session ${sessionToken} with code ${code}`);
+          sessions[sessionToken].foundryInstalled = false;
+          reject(new Error(`Installation failed with code ${code}: ${errorOutput}`));
+        } else {
+          console.log(`Foundry installation completed successfully for session ${sessionToken}`);
+          sessions[sessionToken].foundryInstalled = true;
+          notifyClientFoundryInstalled(sessionToken);
+          resolve();
+        }
+      });
     });
-  });
-};
+  };
 
 // Middleware to handle session tokens
 app.use((req, res, next) => {
