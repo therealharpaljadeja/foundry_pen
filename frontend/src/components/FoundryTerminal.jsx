@@ -120,6 +120,7 @@ const FoundryTerminal = () => {
     const handleMessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'replStarting') {
+        setIsREPLReady(false);
         addToHistory('system', 'Chisel REPL is starting. Please wait...');
       } else if (data.type === 'replReady') {
         setIsREPLReady(true);
@@ -167,7 +168,7 @@ const FoundryTerminal = () => {
       {!isFoundryInstalled && (
         <p className="text-yellow-500 text-sm mb-2">Foundry is being installed. Please wait...</p>
       )}
-      {isREPLStarting && (
+      {isREPLMode && !isREPLReady && (
         <p className="text-yellow-500 text-sm mb-2">Chisel REPL is starting. Please wait...</p>
       )}
       <div 
@@ -177,7 +178,12 @@ const FoundryTerminal = () => {
         {history.map((item, index) => (
           <div 
             key={index} 
-            className={`mb-1 ${item.type === 'command' ? 'text-green-400' : ''}`}
+            className={`mb-1 ${
+              item.type === 'command' ? 'text-green-400' : 
+              item.type === 'error' ? 'text-red-400' : 
+              item.type === 'system' ? 'text-yellow-300' :
+              'text-gray-300'
+            }`}
             dangerouslySetInnerHTML={{ __html: item.content }}
           />
         ))}
@@ -191,7 +197,7 @@ const FoundryTerminal = () => {
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={isREPLMode ? "Enter Chisel command (type 'exit' to leave)" : "Enter Foundry command"}
-          disabled={isExecuting || !isFoundryInstalled}
+          disabled={isExecuting || !isFoundryInstalled || (isREPLMode && !isREPLReady)}
           className="bg-transparent flex-grow outline-none text-gray-100 placeholder-gray-500 text-sm"
         />
       </div>
