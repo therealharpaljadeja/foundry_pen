@@ -53,7 +53,7 @@ app.use((req, res, next) => {
       console.log(`New session created: ${sessionToken} at ${userDir}`);
 
       // Run install_foundry.sh script
-      exec('bash ./install_foundry.sh', (error, stdout, stderr) => {
+      exec('bash ./src/install_foundry.sh', (error, stdout, stderr) => {
         if (error) {
           console.error(`Error during Foundry installation: ${error}`);
           return next(new Error('Internal Server Error'));
