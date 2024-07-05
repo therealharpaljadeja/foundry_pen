@@ -17,7 +17,8 @@ const App = () => {
             </p>
 
             <FoundryTerminal />
-
+            <FoundryTerminal />
+            
             <div className="mt-6">
               <h2 className="text-xl font-semibold mb-2">Getting Started</h2>
               <p>
