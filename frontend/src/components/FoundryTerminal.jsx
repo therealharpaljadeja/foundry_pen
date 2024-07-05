@@ -6,6 +6,7 @@ const FoundryTerminal = () => {
   const [history, setHistory] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
+  const [isREPLMode, setIsREPLMode] = useState(false);
   const ws = useRef(null);
   const [sessionToken, setSessionToken] = useState(null);
   const terminalRef = useRef(null);
@@ -75,7 +76,7 @@ const FoundryTerminal = () => {
     setHistory(prev => [...prev, { type, content }]);
   };
 
-  const executeCommand = () => {
+  const executeCommand = async () => {
     if (command.trim() === '') return;
 
     if (!isFoundryInstalled) {
@@ -83,14 +84,28 @@ const FoundryTerminal = () => {
       return;
     }
 
+    setIsExecuting(true);
     console.log('Executing command, sessionToken:', sessionToken);
+    
     if (ws.current.readyState === WebSocket.OPEN) {
       addToHistory('command', command);
-      ws.current.send(JSON.stringify({ command, sessionToken }));
+
+      if (command.trim().toLowerCase() === 'chisel' && !isREPLMode) {
+        setIsREPLMode(true);
+        addToHistory('system', 'Entering Chisel REPL mode. Type "exit" to leave.');
+      }
+
+      ws.current.send(JSON.stringify({ command, sessionToken, isREPL: isREPLMode }));
+      
+      if (isREPLMode && command.trim().toLowerCase() === 'exit') {
+        setIsREPLMode(false);
+        addToHistory('system', 'Exited Chisel REPL mode.');
+      }
+
       setCommand('');
-      setIsExecuting(true);
     } else {
       addToHistory('error', 'WebSocket connection is not open');
+      setIsExecuting(false);
     }
   };
 
@@ -111,30 +126,37 @@ const FoundryTerminal = () => {
   }, [history]);
 
   return (
-    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg shadow-lg">
-      <h2 className="text-xl font-semibold text-blue-400 mb-2">Foundry Command Line</h2>
+    <div className={`bg-gray-900 text-gray-100 p-4 rounded-lg shadow-lg ${isREPLMode ? 'border-2 border-green-500' : ''}`}>
+      <h2 className="text-xl font-semibold text-blue-400 mb-2">
+        Foundry Command Line {isREPLMode && <span className="text-green-500">(Chisel REPL Mode)</span>}
+      </h2>
       {!isFoundryInstalled && (
         <p className="text-yellow-500 text-sm mb-2">Foundry is being installed. Please wait...</p>
       )}
       <div 
         ref={terminalRef}
-        className="bg-gray-800 rounded-lg p-3 h-32 overflow-auto mb-2 font-mono text-sm"
+        className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
       >
         {history.map((item, index) => (
-          <div key={index} className={`mb-1 ${item.type === 'command' ? 'text-green-400' : item.type === 'error' ? 'text-red-400' : 'text-gray-300'}`}>
+          <div key={index} className={`mb-1 ${
+            item.type === 'command' ? 'text-green-400' : 
+            item.type === 'error' ? 'text-red-400' : 
+            item.type === 'system' ? 'text-yellow-300' :
+            'text-gray-300'
+          }`}>
             {item.type === 'command' ? '> ' : ''}{item.content}
           </div>
         ))}
       </div>
       <div className="flex items-center bg-gray-800 rounded-lg p-2">
-        <span className="text-green-400 mr-2">&gt;</span>
+        <span className="text-green-400 mr-2">{isREPLMode ? 'chisel>' : '>'}</span>
         <input
           ref={inputRef}
           type="text"
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Enter Foundry command"
+          placeholder={isREPLMode ? "Enter Chisel command (type 'exit' to leave)" : "Enter Foundry command"}
           disabled={isExecuting || !isFoundryInstalled}
           className="bg-transparent flex-grow outline-none text-gray-100 placeholder-gray-500 text-sm"
         />
