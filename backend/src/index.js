@@ -227,35 +227,64 @@ wss.on('connection', (ws, req) => {
   
   function handleREPLCommand(ws, session, command, env) {
     if (command.trim().toLowerCase() === 'chisel') {
-      // Start new Chisel REPL process
       if (!session.replProcess) {
+        console.log('Starting new Chisel REPL process');
         session.replProcess = spawn('chisel', [], { cwd: session.userDir, env });
-        
+        session.replReady = false;
+  
         session.replProcess.stdout.on('data', (data) => {
-          ws.send(JSON.stringify({ output: data.toString() }));
+          const output = data.toString();
+          console.log('REPL output:', output);
+          ws.send(JSON.stringify({ output }));
+          if (output.includes('Welcome to Chisel')) {
+            session.replReady = true;
+            console.log('Chisel REPL is ready');
+          }
         });
   
         session.replProcess.stderr.on('data', (data) => {
+          console.error('REPL error:', data.toString());
           ws.send(JSON.stringify({ error: data.toString() }));
         });
   
         session.replProcess.on('close', (code) => {
           console.log(`Chisel REPL process exited with code ${code}`);
           delete session.replProcess;
+          delete session.replReady;
           ws.send(JSON.stringify({ output: 'Exited Chisel REPL mode.' }));
         });
+  
+        // Set a timeout to check if the REPL has started
+        setTimeout(() => {
+          if (!session.replReady) {
+            console.error('Chisel REPL failed to start within the expected time');
+            ws.send(JSON.stringify({ error: 'Chisel REPL failed to start. Please try again.' }));
+            if (session.replProcess) {
+              session.replProcess.kill();
+              delete session.replProcess;
+              delete session.replReady;
+            }
+          }
+        }, 5000); // 5 second timeout
+  
       } else {
+        console.log('Chisel REPL is already running');
         ws.send(JSON.stringify({ output: 'Chisel REPL is already running.' }));
       }
     } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
-      // Exit REPL mode
+      console.log('Exiting Chisel REPL');
       session.replProcess.stdin.write('.exit\n');
       session.replProcess.kill();
       delete session.replProcess;
-    } else if (session.replProcess) {
-      // Send command to REPL
+      delete session.replReady;
+    } else if (session.replProcess && session.replReady) {
+      console.log('Sending command to Chisel REPL:', command);
       session.replProcess.stdin.write(command + '\n');
+    } else if (session.replProcess && !session.replReady) {
+      console.log('Chisel REPL is not ready yet');
+      ws.send(JSON.stringify({ error: 'Chisel REPL is starting. Please wait and try again.' }));
     } else {
+      console.log('Chisel REPL is not running');
       ws.send(JSON.stringify({ error: 'Chisel REPL is not running. Start it with the "chisel" command.' }));
     }
   }
