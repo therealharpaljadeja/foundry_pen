@@ -232,7 +232,7 @@ wss.on('connection', (ws, req) => {
     if (command.trim().toLowerCase() === 'chisel') {
       if (!session.replProcess) {
         console.log('Starting new Chisel REPL process');
-        session.replProcess = spawn('chisel', [], { cwd: session.userDir, env });
+        session.replProcess = spawn('chisel', [], { cwd: session.userDir, env, stdio: ['pipe', 'pipe', 'pipe'] });
         session.replReady = false;
   
         session.replProcess.stdout.on('data', (data) => {
