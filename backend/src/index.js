@@ -173,59 +173,59 @@ const server = app.listen(PORT, () => {
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, req) => {
-  ws.on('message', (message) => {
-    let parsedMessage;
-
-    // Ensure the message is a valid JSON string
-    try {
-      parsedMessage = JSON.parse(message);
-    } catch (error) {
-      console.error('Invalid JSON message received:', message);
-      return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
-    }
-
-    const { type, command, sessionToken, isREPL } = parsedMessage;
-
-    if (type === 'init') {
+    ws.on('message', (message) => {
+      let parsedMessage;
+  
+      try {
+        parsedMessage = JSON.parse(message);
+      } catch (error) {
+        console.error('Invalid JSON message received:', message);
+        return ws.send(JSON.stringify({ error: 'Invalid JSON format' }));
+      }
+  
+      const { type, command, sessionToken, isREPL } = parsedMessage;
+  
+      if (type === 'init') {
         console.log(`WebSocket connection initialized with sessionToken: ${sessionToken}`);
-        ws.sessionToken = sessionToken;  // Store the sessionToken on the WebSocket object
+        ws.sessionToken = sessionToken;
         if (sessions[sessionToken] && sessions[sessionToken].foundryInstalled) {
-            ws.send(JSON.stringify({ type: 'foundryInstalled' }));
+          ws.send(JSON.stringify({ type: 'foundryInstalled' }));
         }
         return;
-    }
-    // Validate the command input
-    if (!command || typeof command !== 'string') {
-      return ws.send(JSON.stringify({ error: 'Invalid command input' }));
-    }
-
-    // Validate the session token
-    const session = sessions[sessionToken];
-    if (!session) {
-      console.log(`Invalid session token: ${sessionToken}`);
-      return ws.send(JSON.stringify({ error: 'Invalid session token' }));
-    }
-
-    // Check if Foundry is installed
-    if (!session.foundryInstalled) {
-      return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
-    }
-
-    // Ensure PATH includes Foundry installation path
-    const env = Object.create(process.env);
-    env.PATH = `${env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
-    console.log(`Executing command in directory: ${session.userDir}`);
-    console.log(`Environment PATH: ${env.PATH}`);
-
-    if (isREPL) {
-      handleREPLCommand(ws, session, command, env);
-    } else {
-      handleRegularCommand(ws, session, command, env);
-    }
+      }
+  
+      // Validate the command input
+      if (!command || typeof command !== 'string') {
+        return ws.send(JSON.stringify({ error: 'Invalid command input' }));
+      }
+  
+      // Validate the session token
+      const session = sessions[sessionToken];
+      if (!session) {
+        console.log(`Invalid session token: ${sessionToken}`);
+        return ws.send(JSON.stringify({ error: 'Invalid session token' }));
+      }
+  
+      // Check if Foundry is installed
+      if (!session.foundryInstalled) {
+        return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
+      }
+  
+      // Ensure PATH includes Foundry installation path
+      const env = Object.create(process.env);
+      env.PATH = `${env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
+      console.log(`Executing command in directory: ${session.userDir}`);
+      console.log(`Environment PATH: ${env.PATH}`);
+  
+      if (isREPL) {
+        handleREPLCommand(ws, session, command, env);
+      } else {
+        handleRegularCommand(ws, session, command, env);
+      }
+    });
   });
-});
-
-function handleREPLCommand(ws, session, command, env) {
+  
+  function handleREPLCommand(ws, session, command, env) {
     if (command.trim().toLowerCase() === 'chisel') {
       // Start new Chisel REPL process
       if (!session.replProcess) {
@@ -259,22 +259,22 @@ function handleREPLCommand(ws, session, command, env) {
       ws.send(JSON.stringify({ error: 'Chisel REPL is not running. Start it with the "chisel" command.' }));
     }
   }
-
-function handleRegularCommand(ws, session, command, env) {
-  const child = spawn(command, { shell: true, cwd: session.userDir, env });
-
-  child.stdout.on('data', (data) => {
-    ws.send(JSON.stringify({ output: data.toString() }));
-  });
-
-  child.stderr.on('data', (data) => {
-    ws.send(JSON.stringify({ error: data.toString() }));
-  });
-
-  child.on('close', (code) => {
-    ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
-  });
-}
+  
+  function handleRegularCommand(ws, session, command, env) {
+    const child = spawn(command, { shell: true, cwd: session.userDir, env });
+  
+    child.stdout.on('data', (data) => {
+      ws.send(JSON.stringify({ output: data.toString() }));
+    });
+  
+    child.stderr.on('data', (data) => {
+      ws.send(JSON.stringify({ error: data.toString() }));
+    });
+  
+    child.on('close', (code) => {
+      ws.send(JSON.stringify({ output: `Command finished with code ${code}` }));
+    });
+  }
 
 // Cleanup mechanism to remove old session directories (e.g., run this periodically)
 const cleanupOldSessions = () => {
