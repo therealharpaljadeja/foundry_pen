@@ -226,6 +226,9 @@ wss.on('connection', (ws, req) => {
   });
   
   function handleREPLCommand(ws, session, command, env) {
+    console.log(`Handling REPL command: ${command}`);
+    console.log(`REPL state: ${session.replProcess ? 'Running' : 'Not running'}, Ready: ${session.replReady}`);
+  
     if (command.trim().toLowerCase() === 'chisel') {
       if (!session.replProcess) {
         console.log('Starting new Chisel REPL process');
@@ -254,22 +257,14 @@ wss.on('connection', (ws, req) => {
           ws.send(JSON.stringify({ output: 'Exited Chisel REPL mode.' }));
         });
   
-        // Set a timeout to check if the REPL has started
-        setTimeout(() => {
-          if (!session.replReady) {
-            console.error('Chisel REPL failed to start within the expected time');
-            ws.send(JSON.stringify({ error: 'Chisel REPL failed to start. Please try again.' }));
-            if (session.replProcess) {
-              session.replProcess.kill();
-              delete session.replProcess;
-              delete session.replReady;
-            }
-          }
-        }, 5000); // 5 second timeout
+        ws.send(JSON.stringify({ output: 'Starting Chisel REPL. Please wait...' }));
   
-      } else {
-        console.log('Chisel REPL is already running');
+      } else if (session.replReady) {
+        console.log('Chisel REPL is already running and ready');
         ws.send(JSON.stringify({ output: 'Chisel REPL is already running.' }));
+      } else {
+        console.log('Chisel REPL is starting up');
+        ws.send(JSON.stringify({ output: 'Chisel REPL is starting. Please wait...' }));
       }
     } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
       console.log('Exiting Chisel REPL');
@@ -277,6 +272,7 @@ wss.on('connection', (ws, req) => {
       session.replProcess.kill();
       delete session.replProcess;
       delete session.replReady;
+      ws.send(JSON.stringify({ output: 'Exited Chisel REPL mode.' }));
     } else if (session.replProcess && session.replReady) {
       console.log('Sending command to Chisel REPL:', command);
       session.replProcess.stdin.write(command + '\n');

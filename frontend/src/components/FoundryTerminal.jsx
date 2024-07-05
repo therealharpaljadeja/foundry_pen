@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
+import Convert from 'ansi-to-html';
+
+const convert = new Convert({ newline: true });
 
 const FoundryTerminal = () => {
   const [command, setCommand] = useState('');
@@ -7,6 +10,7 @@ const FoundryTerminal = () => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const [isREPLMode, setIsREPLMode] = useState(false);
+  const [isREPLStarting, setIsREPLStarting] = useState(false);
   const ws = useRef(null);
   const [sessionToken, setSessionToken] = useState(null);
   const terminalRef = useRef(null);
@@ -73,6 +77,7 @@ const FoundryTerminal = () => {
   }, [sessionToken]);
 
   const addToHistory = (type, content) => {
+    const htmlContent = convert.toHtml(content);
     setHistory(prev => [...prev, { type, content }]);
   };
 
@@ -92,22 +97,47 @@ const FoundryTerminal = () => {
 
       if (command.trim().toLowerCase() === 'chisel' && !isREPLMode) {
         setIsREPLMode(true);
-        addToHistory('system', 'Entering Chisel REPL mode. Type "exit" to leave.');
+        setIsREPLStarting(true);
+        addToHistory('system', 'Entering Chisel REPL mode. Please wait...');
       }
 
       ws.current.send(JSON.stringify({ command, sessionToken, isREPL: isREPLMode }));
       
       if (isREPLMode && command.trim().toLowerCase() === 'exit') {
         setIsREPLMode(false);
+        setIsREPLStarting(false);
         addToHistory('system', 'Exited Chisel REPL mode.');
       }
 
       setCommand('');
     } else {
       addToHistory('error', 'WebSocket connection is not open');
-      setIsExecuting(false);
     }
+    setIsExecuting(false);
   };
+
+  useEffect(() => {
+    if (!ws.current) return;
+
+    const handleMessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.error) {
+        addToHistory('error', data.error);
+      } else if (data.output) {
+        addToHistory('output', data.output);
+        if (data.output.includes('Welcome to Chisel')) {
+          setIsREPLStarting(false);
+        }
+      }
+      setIsExecuting(false);
+    };
+
+    ws.current.addEventListener('message', handleMessage);
+
+    return () => {
+      ws.current.removeEventListener('message', handleMessage);
+    };
+  }, [ws.current]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !isExecuting && isFoundryInstalled) {
@@ -138,14 +168,11 @@ const FoundryTerminal = () => {
         className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
       >
         {history.map((item, index) => (
-          <div key={index} className={`mb-1 ${
-            item.type === 'command' ? 'text-green-400' : 
-            item.type === 'error' ? 'text-red-400' : 
-            item.type === 'system' ? 'text-yellow-300' :
-            'text-gray-300'
-          }`}>
-            {item.type === 'command' ? '> ' : ''}{item.content}
-          </div>
+          <div 
+            key={index} 
+            className={`mb-1 ${item.type === 'command' ? 'text-green-400' : ''}`}
+            dangerouslySetInnerHTML={{ __html: item.content }}
+          />
         ))}
       </div>
       <div className="flex items-center bg-gray-800 rounded-lg p-2">
