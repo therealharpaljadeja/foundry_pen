@@ -38,51 +38,53 @@ console.log(`Foundry installation script path: ${scriptPath}`);
 
 // Function to check if Foundry is already installed
 const isFoundryInstalled = () => {
-    return new Promise((resolve) => {
-      exec('forge --version', (error, stdout, stderr) => {
-        if (error) {
-          console.log('Foundry is not installed');
-          resolve(false);
-        } else {
-          console.log(`Foundry is already installed: ${stdout.trim()}`);
-          resolve(true);
-        }
-      });
+  return new Promise((resolve) => {
+    exec('forge --version', (error, stdout, stderr) => {
+      if (error) {
+        console.log('Foundry is not installed');
+        resolve(false);
+      } else {
+        console.log(`Foundry is already installed: ${stdout.trim()}`);
+        resolve(true);
+      }
     });
-  };
+  });
+};
 
 // Function to install Foundry asynchronously
 const installFoundry = async (userDir, sessionToken) => {
-    const alreadyInstalled = await isFoundryInstalled();
-    
-    if (alreadyInstalled) {
-      console.log(`Foundry is already installed for session ${sessionToken}`);
-      sessions[sessionToken].foundryInstalled = true;
-      return;
-    }
+  const alreadyInstalled = await isFoundryInstalled();
   
-    return new Promise((resolve, reject) => {
-      exec(`bash ${scriptPath}`, { cwd: userDir }, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error during Foundry installation for session ${sessionToken}: ${error}`);
-          sessions[sessionToken].foundryInstalled = false;
-          reject(error);
-        } else {
-          console.log(`Foundry installation output for session ${sessionToken}: ${stdout}`);
-          console.error(`Foundry installation error output for session ${sessionToken}: ${stderr}`);
-          sessions[sessionToken].foundryInstalled = true;
-          resolve();
-        }
-      });
-    });
-  };
+  if (alreadyInstalled) {
+    console.log(`Foundry is already installed for session ${sessionToken}`);
+    sessions[sessionToken].foundryInstalled = true;
+    return;
+  }
 
-// Middleware to generate or validate session tokens
+  return new Promise((resolve, reject) => {
+    exec(`bash ${scriptPath}`, { cwd: userDir }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error during Foundry installation for session ${sessionToken}: ${error}`);
+        sessions[sessionToken].foundryInstalled = false;
+        reject(error);
+      } else {
+        console.log(`Foundry installation output for session ${sessionToken}: ${stdout}`);
+        console.error(`Foundry installation error output for session ${sessionToken}: ${stderr}`);
+        sessions[sessionToken].foundryInstalled = true;
+        resolve();
+      }
+    });
+  });
+};
+
+// Middleware to handle session tokens
 app.use((req, res, next) => {
   let sessionToken = req.headers['x-session-token'];
 
   if (!sessionToken || !sessions[sessionToken]) {
-    sessionToken = crypto.randomBytes(16).toString('hex');
+    if (!sessionToken) {
+      sessionToken = crypto.randomBytes(16).toString('hex');
+    }
     const userDir = path.join(os.tmpdir(), sessionToken);
     
     try {

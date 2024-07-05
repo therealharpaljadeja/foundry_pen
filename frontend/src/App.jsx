@@ -12,27 +12,19 @@ const App = () => {
     const fetchSessionToken = async () => {
       let token = localStorage.getItem('sessionToken');
       let response;
-      if (!token) {
-        response = await fetch('/api/session');
-        const data = await response.json();
+      
+      const headers = token ? { 'x-session-token': token } : {};
+      response = await fetch('/api/session', { headers });
+      const data = await response.json();
+      
+      if (data.sessionToken !== token) {
         token = data.sessionToken;
         localStorage.setItem('sessionToken', token);
-        console.log('New session token received:', token);
-      } else {
-        // Verify the existing token and get Foundry status
-        response = await fetch('/api/session', {
-          headers: { 'x-session-token': token }
-        });
-        const data = await response.json();
-        if (data.sessionToken !== token) {
-          // If the server returns a different token, update it
-          token = data.sessionToken;
-          localStorage.setItem('sessionToken', token);
-          console.log('Updated session token:', token);
-        }
+        console.log('New or updated session token:', token);
       }
+      
       setSessionToken(token);
-      setIsFoundryInstalled(response.foundryInstalled);
+      setIsFoundryInstalled(data.foundryInstalled);
     };
 
     fetchSessionToken();
