@@ -36,55 +36,62 @@ const sessions = {};
 const scriptPath = path.resolve(__dirname, 'install_foundry.sh');
 console.log(`Foundry installation script path: ${scriptPath}`);
 
+// Function to install Foundry asynchronously
+const installFoundry = (userDir, sessionToken) => {
+  return new Promise((resolve, reject) => {
+    exec(`bash ${scriptPath}`, { cwd: userDir }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error during Foundry installation for session ${sessionToken}: ${error}`);
+        sessions[sessionToken].foundryInstalled = false;
+        reject(error);
+      } else {
+        console.log(`Foundry installation output for session ${sessionToken}: ${stdout}`);
+        console.error(`Foundry installation error output for session ${sessionToken}: ${stderr}`);
+        sessions[sessionToken].foundryInstalled = true;
+        resolve();
+      }
+    });
+  });
+};
+
 // Middleware to generate or validate session tokens
 app.use((req, res, next) => {
   let sessionToken = req.headers['x-session-token'];
 
   if (!sessionToken || !sessions[sessionToken]) {
-    if (!sessionToken) {
-      sessionToken = crypto.randomBytes(16).toString('hex');
-      console.log(`No session token provided, generated new token: ${sessionToken}`);
-    } else {
-      console.log(`Invalid session token provided: ${sessionToken}, generating new token`);
-      sessionToken = crypto.randomBytes(16).toString('hex');
-    }
-
+    sessionToken = crypto.randomBytes(16).toString('hex');
     const userDir = path.join(os.tmpdir(), sessionToken);
+    
     try {
       fs.mkdirSync(userDir, { recursive: true });
-      sessions[sessionToken] = userDir;
+      sessions[sessionToken] = { userDir, foundryInstalled: false };
       console.log(`New session created: ${sessionToken} at ${userDir}`);
 
-      // Run install_foundry.sh script
-      exec('bash ${scriptPath}', (error, stdout, stderr) => {
-        if (error) {
-          console.error(`Error during Foundry installation: ${error}`);
-          return next(new Error('Internal Server Error'));
-        }
-        console.log(`Foundry installation output: ${stdout}`);
-        console.error(`Foundry installation error output: ${stderr}`);
-        next();
-      });
+      // Start Foundry installation asynchronously
+      installFoundry(userDir, sessionToken).catch(console.error);
     } catch (error) {
       console.error(`Error creating directory: ${userDir}`, error);
       return next(new Error('Internal Server Error'));
     }
   } else {
-    console.log(`Existing session: ${sessionToken} at ${sessions[sessionToken]}`);
-    next();
+    console.log(`Existing session: ${sessionToken} at ${sessions[sessionToken].userDir}`);
   }
 
   req.sessionToken = sessionToken;
-  req.userDir = sessions[sessionToken];
+  req.userDir = sessions[sessionToken].userDir;
   res.setHeader('x-session-token', sessionToken);
+  next();
 });
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../frontend/dist')));
 
-// API route to get session token
+// API route to get session token and Foundry installation status
 app.get('/api/session', (req, res) => {
-  res.json({ sessionToken: req.sessionToken });
+  res.json({ 
+    sessionToken: req.sessionToken,
+    foundryInstalled: sessions[req.sessionToken].foundryInstalled
+  });
 });
 
 // API routes
@@ -120,20 +127,25 @@ wss.on('connection', (ws, req) => {
     }
 
     // Validate the session token
-    const userDir = sessions[sessionToken];
-    if (!userDir) {
+    const session = sessions[sessionToken];
+    if (!session) {
       console.log(`Invalid session token: ${sessionToken}`);
       return ws.send(JSON.stringify({ error: 'Invalid session token' }));
+    }
+
+    // Check if Foundry is installed
+    if (!session.foundryInstalled) {
+      return ws.send(JSON.stringify({ error: 'Foundry is still being installed. Please wait.' }));
     }
 
     // Ensure PATH includes Foundry installation path
     const env = Object.create(process.env);
     env.PATH = `${env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
-    console.log(`Executing command in directory: ${userDir}`);
+    console.log(`Executing command in directory: ${session.userDir}`);
     console.log(`Environment PATH: ${env.PATH}`);
 
     // Execute the command in the user's directory
-    const child = spawn(command, { shell: true, cwd: userDir, env });
+    const child = spawn(command, { shell: true, cwd: session.userDir, env });
 
     child.stdout.on('data', (data) => {
       ws.send(JSON.stringify({ output: data.toString() }));
@@ -155,7 +167,7 @@ const cleanupOldSessions = () => {
   const now = Date.now();
 
   for (const sessionToken in sessions) {
-    const sessionDir = sessions[sessionToken];
+    const sessionDir = sessions[sessionToken].userDir;
     const stats = fs.statSync(sessionDir);
     if (now - stats.ctimeMs > maxAge) {
       fs.rmdirSync(sessionDir, { recursive: true });
