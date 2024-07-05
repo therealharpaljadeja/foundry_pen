@@ -3,11 +3,12 @@ import Cookies from 'js-cookie';
 
 const App = () => {
   const [command, setCommand] = useState('');
-  const [output, setOutput] = useState('');
+  const [history, setHistory] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const ws = useRef(null);
   const [sessionToken, setSessionToken] = useState(null);
+  const terminalRef = useRef(null);
 
   useEffect(() => {
     const fetchSessionToken = async () => {
@@ -39,7 +40,6 @@ const App = () => {
 
     ws.current.onopen = () => {
       console.log('WebSocket connection opened, sessionToken:', sessionToken);
-      // Send the session token immediately after connection
       ws.current.send(JSON.stringify({ type: 'init', sessionToken }));
     };
 
@@ -49,9 +49,9 @@ const App = () => {
       if (data.type === 'foundryInstalled') {
         setIsFoundryInstalled(true);
       } else if (data.error) {
-        setOutput((prev) => prev + '\n' + data.error);
+        addToHistory('error', data.error);
       } else if (data.output) {
-        setOutput((prev) => prev + '\n' + data.output);
+        addToHistory('output', data.output);
       }
       setIsExecuting(false);
     };
@@ -67,44 +67,69 @@ const App = () => {
     };
   }, [sessionToken]);
 
+  const addToHistory = (type, content) => {
+    setHistory(prev => [...prev, { type, content }]);
+  };
+
   const executeCommand = () => {
-    if (command.trim() === '') {
-      setOutput((prev) => prev + '\n' + 'Command cannot be empty');
-      return;
-    }
+    if (command.trim() === '') return;
 
     if (!isFoundryInstalled) {
-      setOutput((prev) => prev + '\n' + 'Foundry is still being installed. Please wait.');
+      addToHistory('error', 'Foundry is still being installed. Please wait.');
       return;
     }
 
     console.log('Executing command, sessionToken:', sessionToken);
     if (ws.current.readyState === WebSocket.OPEN) {
+      addToHistory('command', command);
       ws.current.send(JSON.stringify({ command, sessionToken }));
       setCommand('');
       setIsExecuting(true);
     } else {
-      setOutput((prev) => prev + '\n' + 'WebSocket connection is not open');
+      addToHistory('error', 'WebSocket connection is not open');
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !isExecuting && isFoundryInstalled) {
+      executeCommand();
+    }
+  };
+
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [history]);
+
   return (
-    <div>
-      <h1>Command Executor</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Foundry Command Line</h1>
       {!isFoundryInstalled && (
-        <p>Foundry is being installed. Please wait...</p>
+        <p className="text-yellow-500 mb-4">Foundry is being installed. Please wait...</p>
       )}
-      <input
-        type="text"
-        value={command}
-        onChange={(e) => setCommand(e.target.value)}
-        placeholder="Enter command"
-        disabled={isExecuting || !isFoundryInstalled}
-      />
-      <button onClick={executeCommand} disabled={isExecuting || !isFoundryInstalled}>
-        {isExecuting ? 'Executing...' : 'Execute'}
-      </button>
-      <pre>{output}</pre>
+      <div 
+        ref={terminalRef}
+        className="bg-gray-900 text-white p-4 rounded-lg h-96 overflow-auto mb-4"
+      >
+        {history.map((item, index) => (
+          <div key={index} className={`mb-2 ${item.type === 'command' ? 'text-green-400' : item.type === 'error' ? 'text-red-400' : ''}`}>
+            {item.type === 'command' ? '> ' : ''}{item.content}
+          </div>
+        ))}
+        <div className="flex items-center">
+          <span className="text-green-400 mr-2">&gt;</span>
+          <input
+            type="text"
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Enter command"
+            disabled={isExecuting || !isFoundryInstalled}
+            className="bg-transparent flex-grow outline-none"
+          />
+        </div>
+      </div>
     </div>
   );
 };
