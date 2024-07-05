@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-const Cookies = require('js-cookie');
+import Cookies from 'js-cookie';
 
 const App = () => {
   const [command, setCommand] = useState('');
@@ -87,26 +87,20 @@ const App = () => {
   return (
     <div>
       <h1>Command Executor</h1>
-      {sessionToken ? (
-        <>
-          {!isFoundryInstalled && (
-            <p>Foundry is being installed. Please wait...</p>
-          )}
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            placeholder="Enter command"
-            disabled={isExecuting || !isFoundryInstalled}
-          />
-          <button onClick={executeCommand} disabled={isExecuting || !isFoundryInstalled}>
-            {isExecuting ? 'Executing...' : 'Execute'}
-          </button>
-          <pre>{output}</pre>
-        </>
-      ) : (
-        <p>Loading session...</p>
+      {!isFoundryInstalled && (
+        <p>Foundry is being installed. Please wait...</p>
       )}
+      <input
+        type="text"
+        value={command}
+        onChange={(e) => setCommand(e.target.value)}
+        placeholder="Enter command"
+        disabled={isExecuting || !isFoundryInstalled}
+      />
+      <button onClick={executeCommand} disabled={isExecuting || !isFoundryInstalled}>
+        {isExecuting ? 'Executing...' : 'Execute'}
+      </button>
+      <pre>{output}</pre>
     </div>
   );
 };
