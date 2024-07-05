@@ -242,6 +242,7 @@ wss.on('connection', (ws, req) => {
           if (output.includes('Welcome to Chisel')) {
             session.replReady = true;
             console.log('Chisel REPL is ready');
+            ws.send(JSON.stringify({ type: 'replReady' }));
           }
         });
   
@@ -254,17 +255,16 @@ wss.on('connection', (ws, req) => {
           console.log(`Chisel REPL process exited with code ${code}`);
           delete session.replProcess;
           delete session.replReady;
-          ws.send(JSON.stringify({ output: 'Exited Chisel REPL mode.' }));
+          ws.send(JSON.stringify({ type: 'replClosed' }));
         });
   
-        ws.send(JSON.stringify({ output: 'Starting Chisel REPL. Please wait...' }));
-  
+        ws.send(JSON.stringify({ type: 'replStarting' }));
       } else if (session.replReady) {
         console.log('Chisel REPL is already running and ready');
-        ws.send(JSON.stringify({ output: 'Chisel REPL is already running.' }));
+        ws.send(JSON.stringify({ type: 'replReady' }));
       } else {
         console.log('Chisel REPL is starting up');
-        ws.send(JSON.stringify({ output: 'Chisel REPL is starting. Please wait...' }));
+        ws.send(JSON.stringify({ type: 'replStarting' }));
       }
     } else if (command.trim().toLowerCase() === 'exit' && session.replProcess) {
       console.log('Exiting Chisel REPL');
@@ -272,7 +272,7 @@ wss.on('connection', (ws, req) => {
       session.replProcess.kill();
       delete session.replProcess;
       delete session.replReady;
-      ws.send(JSON.stringify({ output: 'Exited Chisel REPL mode.' }));
+      ws.send(JSON.stringify({ type: 'replClosed' }));
     } else if (session.replProcess && session.replReady) {
       console.log('Sending command to Chisel REPL:', command);
       session.replProcess.stdin.write(command + '\n');

@@ -10,7 +10,7 @@ const FoundryTerminal = () => {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const [isREPLMode, setIsREPLMode] = useState(false);
-  const [isREPLStarting, setIsREPLStarting] = useState(false);
+  const [isREPLReady, setIsREPLReady] = useState(false);
   const ws = useRef(null);
   const [sessionToken, setSessionToken] = useState(null);
   const terminalRef = useRef(null);
@@ -78,7 +78,7 @@ const FoundryTerminal = () => {
 
   const addToHistory = (type, content) => {
     const htmlContent = convert.toHtml(content);
-    setHistory(prev => [...prev, { type, content }]);
+    setHistory(prev => [...prev, { type, content: htmlContent }]);
   };
 
   const executeCommand = async () => {
@@ -97,16 +97,14 @@ const FoundryTerminal = () => {
 
       if (command.trim().toLowerCase() === 'chisel' && !isREPLMode) {
         setIsREPLMode(true);
-        setIsREPLStarting(true);
-        addToHistory('system', 'Entering Chisel REPL mode. Please wait...');
+        setIsREPLReady(false);
       }
 
       ws.current.send(JSON.stringify({ command, sessionToken, isREPL: isREPLMode }));
       
       if (isREPLMode && command.trim().toLowerCase() === 'exit') {
         setIsREPLMode(false);
-        setIsREPLStarting(false);
-        addToHistory('system', 'Exited Chisel REPL mode.');
+        setIsREPLReady(false);
       }
 
       setCommand('');
@@ -121,13 +119,19 @@ const FoundryTerminal = () => {
 
     const handleMessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.error) {
+      if (data.type === 'replStarting') {
+        addToHistory('system', 'Chisel REPL is starting. Please wait...');
+      } else if (data.type === 'replReady') {
+        setIsREPLReady(true);
+        addToHistory('system', 'Chisel REPL is ready.');
+      } else if (data.type === 'replClosed') {
+        setIsREPLMode(false);
+        setIsREPLReady(false);
+        addToHistory('system', 'Exited Chisel REPL mode.');
+      } else if (data.error) {
         addToHistory('error', data.error);
       } else if (data.output) {
         addToHistory('output', data.output);
-        if (data.output.includes('Welcome to Chisel')) {
-          setIsREPLStarting(false);
-        }
       }
       setIsExecuting(false);
     };
