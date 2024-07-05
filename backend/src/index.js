@@ -6,19 +6,24 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
+const cookieParser = require('cookie-parser');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8879;
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://foundry-pen-86c9c65f23b0.herokuapp.com',
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 const sessions = {};
+
+const scriptPath = path.resolve(__dirname, 'install_foundry.sh');
+console.log(`Foundry installation script path: ${scriptPath}`);
 
 const isFoundryInstalled = () => {
   return new Promise((resolve) => {
@@ -43,11 +48,42 @@ const installFoundry = async (userDir, sessionToken) => {
     return;
   }
 
-  // ... (rest of installFoundry function)
+  return new Promise((resolve, reject) => {
+    const child = exec(`bash ${scriptPath}`, { cwd: userDir });
+
+    let output = '';
+    let errorOutput = '';
+
+    child.stdout.on('data', (data) => {
+      output += data;
+      console.log(`Foundry installation output for session ${sessionToken}: ${data.trim()}`);
+    });
+
+    child.stderr.on('data', (data) => {
+      if (data.includes('%') || data.includes('#')) {
+        console.log(`Foundry installation progress for session ${sessionToken}: ${data.trim()}`);
+      } else {
+        errorOutput += data;
+        console.error(`Foundry installation error for session ${sessionToken}: ${data.trim()}`);
+      }
+    });
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`Foundry installation failed for session ${sessionToken} with code ${code}`);
+        sessions[sessionToken].foundryInstalled = false;
+        reject(new Error(`Installation failed with code ${code}: ${errorOutput}`));
+      } else {
+        console.log(`Foundry installation completed successfully for session ${sessionToken}`);
+        sessions[sessionToken].foundryInstalled = true;
+        resolve();
+      }
+    });
+  });
 };
 
 app.use((req, res, next) => {
-  let sessionToken = req.headers['x-session-token'] || req.cookies.sessionToken;
+  let sessionToken = req.cookies.sessionToken;
 
   if (sessionToken && sessions[sessionToken]) {
     req.sessionToken = sessionToken;
@@ -80,9 +116,13 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/session', (req, res) => {
+  const sessionToken = req.sessionToken;
+  if (!sessionToken || !sessions[sessionToken]) {
+    return res.status(400).json({ error: 'Invalid session' });
+  }
   res.json({ 
-    sessionToken: req.sessionToken,
-    foundryInstalled: sessions[req.sessionToken].foundryInstalled
+    sessionToken: sessionToken,
+    foundryInstalled: sessions[sessionToken].foundryInstalled
   });
 });
 

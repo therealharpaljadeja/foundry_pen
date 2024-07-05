@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Cookies from 'js-cookie';
 import Convert from 'ansi-to-html';
 
 const convert = new Convert({ newline: true });
@@ -9,29 +8,29 @@ const FoundryTerminal = () => {
   const [history, setHistory] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
-  const [sessionToken, setSessionToken] = useState(null);
   const terminalRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    const fetchSessionToken = async () => {
-      let token = Cookies.get('sessionToken');
-      let response;
-      
-      response = await fetch('/api/session');
-      const data = await response.json();
-      
-      if (data.sessionToken !== token) {
-        token = data.sessionToken;
-        Cookies.set('sessionToken', token, { expires: 1 });
-        console.log('New or updated session token:', token);
+    const fetchSessionInfo = async () => {
+      try {
+        const response = await fetch('/api/session', {
+          credentials: 'include'  // This ensures cookies are sent with the request
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch session');
+        }
+        const data = await response.json();
+        
+        setIsFoundryInstalled(data.foundryInstalled);
+        console.log('Session initialized, Foundry installed:', data.foundryInstalled);
+      } catch (error) {
+        console.error('Error fetching session:', error);
+        addToHistory('error', 'Failed to initialize session. Please refresh the page.');
       }
-      
-      setSessionToken(token);
-      setIsFoundryInstalled(data.foundryInstalled);
     };
 
-    fetchSessionToken();
+    fetchSessionInfo();
   }, []);
 
   const addToHistory = (type, content) => {
@@ -55,10 +54,14 @@ const FoundryTerminal = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': sessionToken
         },
+        credentials: 'include',  // This ensures cookies are sent with the request
         body: JSON.stringify({ command })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to execute command');
+      }
 
       const data = await response.json();
 
