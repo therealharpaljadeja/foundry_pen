@@ -33,6 +33,9 @@ app.use(limiter);
 
 const sessions = {};
 
+const scriptPath = path.resolve(__dirname, 'install_foundry.sh');
+console.log(`Foundry installation script path: ${scriptPath}`);
+
 // Middleware to generate or validate session tokens
 app.use((req, res, next) => {
   let sessionToken = req.headers['x-session-token'];
@@ -53,7 +56,7 @@ app.use((req, res, next) => {
       console.log(`New session created: ${sessionToken} at ${userDir}`);
 
       // Run install_foundry.sh script
-      exec('bash ./src/install_foundry.sh', (error, stdout, stderr) => {
+      exec('bash ${scriptPath}', (error, stdout, stderr) => {
         if (error) {
           console.error(`Error during Foundry installation: ${error}`);
           return next(new Error('Internal Server Error'));
