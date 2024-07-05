@@ -163,6 +163,9 @@ const FoundryTerminal = () => {
       {!isFoundryInstalled && (
         <p className="text-yellow-500 text-sm mb-2">Foundry is being installed. Please wait...</p>
       )}
+      {isREPLStarting && (
+        <p className="text-yellow-500 text-sm mb-2">Chisel REPL is starting. Please wait...</p>
+      )}
       <div 
         ref={terminalRef}
         className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
