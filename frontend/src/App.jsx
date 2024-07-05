@@ -118,33 +118,39 @@ const App = () => {
   }, [history]);
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Foundry Command Line</h1>
-      {!isFoundryInstalled && (
-        <p className="text-yellow-500 mb-4">Foundry is being installed. Please wait...</p>
-      )}
-      <div 
-        ref={terminalRef}
-        className="bg-gray-900 text-white p-4 rounded-lg h-96 overflow-auto mb-4"
-      >
-        {history.map((item, index) => (
-          <div key={index} className={`mb-2 ${item.type === 'command' ? 'text-green-400' : item.type === 'error' ? 'text-red-400' : ''}`}>
-            {item.type === 'command' ? '> ' : ''}{item.content}
+    <div className="min-h-screen bg-gray-900 text-gray-100 p-4">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-blue-400">Foundry Command Line</h1>
+          {!isFoundryInstalled && (
+            <p className="text-yellow-500 mt-2">Foundry is being installed. Please wait...</p>
+          )}
+        </header>
+        <main>
+          <div 
+            ref={terminalRef}
+            className="bg-gray-800 rounded-lg p-4 h-[calc(100vh-200px)] overflow-auto mb-4 font-mono"
+          >
+            {history.map((item, index) => (
+              <div key={index} className={`mb-2 ${item.type === 'command' ? 'text-green-400' : item.type === 'error' ? 'text-red-400' : 'text-gray-300'}`}>
+                {item.type === 'command' ? '> ' : ''}{item.content}
+              </div>
+            ))}
           </div>
-        ))}
-        <div className="flex items-center">
-          <span className="text-green-400 mr-2">&gt;</span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Enter command"
-            disabled={isExecuting || !isFoundryInstalled}
-            className="bg-transparent flex-grow outline-none"
-          />
-        </div>
+          <div className="flex items-center bg-gray-800 rounded-lg p-2">
+            <span className="text-green-400 mr-2">&gt;</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter command"
+              disabled={isExecuting || !isFoundryInstalled}
+              className="bg-transparent flex-grow outline-none text-gray-100 placeholder-gray-500"
+            />
+          </div>
+        </main>
       </div>
     </div>
   );
