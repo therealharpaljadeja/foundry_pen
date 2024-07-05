@@ -3,6 +3,8 @@ import Convert from 'ansi-to-html';
 
 const convert = new Convert({ newline: true });
 
+const API_URL = 'https://foundry-pen-86c9c65f23b0.herokuapp.com'
+
 const FoundryTerminal = () => {
   const [command, setCommand] = useState('');
   const [history, setHistory] = useState([]);
@@ -14,8 +16,8 @@ const FoundryTerminal = () => {
   useEffect(() => {
     const fetchSessionInfo = async () => {
       try {
-        const response = await fetch('/api/session', {
-          credentials: 'include'  // This ensures cookies are sent with the request
+        const response = await fetch(`${API_URL}/api/session`, {
+          credentials: 'include'
         });
         if (!response.ok) {
           throw new Error('Failed to fetch session');
@@ -50,12 +52,12 @@ const FoundryTerminal = () => {
     addToHistory('command', command);
 
     try {
-      const response = await fetch('/api/execute', {
+      const response = await fetch(`${API_URL}/api/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',  // This ensures cookies are sent with the request
+        credentials: 'include',
         body: JSON.stringify({ command })
       });
 
