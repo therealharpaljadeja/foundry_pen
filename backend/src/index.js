@@ -159,6 +159,10 @@ wss.on('connection', (ws, req) => {
 
     if (type === 'init') {
         console.log(`WebSocket connection initialized with sessionToken: ${sessionToken}`);
+        ws.sessionToken = sessionToken;  // Store the sessionToken on the WebSocket object
+        if (sessions[sessionToken] && sessions[sessionToken].foundryInstalled) {
+            ws.send(JSON.stringify({ type: 'foundryInstalled' }));
+        }
         return;
     }
     // Validate the command input

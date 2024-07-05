@@ -46,9 +46,11 @@ const App = () => {
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log('Received message from server:', data);
-      if (data.error) {
+      if (data.type === 'foundryInstalled') {
+        setIsFoundryInstalled(true);
+      } else if (data.error) {
         setOutput((prev) => prev + '\n' + data.error);
-      } else if (data.output){
+      } else if (data.output) {
         setOutput((prev) => prev + '\n' + data.output);
       }
       setIsExecuting(false);
