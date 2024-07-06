@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import FoundryTerminal from './components/FoundryTerminal';
+import FileEditor from './components/FileEditor';
 
 const App = () => {
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentFile, setCurrentFile] = useState(null);
 
   const fetchSessionInfo = useCallback(async () => {
     try {
@@ -28,9 +30,26 @@ const App = () => {
     }
   }, []);
 
+  const fetchFirstFile = useCallback(async () => {
+    try {
+      const response = await fetch('/api/first-file', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch first file');
+      }
+      const data = await response.json();
+      setCurrentFile(data.filename);
+    } catch (error) {
+      console.error('Error fetching first file:', error);
+      setCurrentFile(null);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSessionInfo();
-  }, [fetchSessionInfo]);
+    fetchFirstFile();
+  }, [fetchSessionInfo, fetchFirstFile]);
 
   useEffect(() => {
     let intervalId;
@@ -53,7 +72,7 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[#23272F] text-white font-sans">
-      <div className="max-w-3xl mx-auto p-8">
+      <div className="max-w-4xl mx-auto p-8">
         <h1 className="text-3xl font-bold mb-6">Foundry CLI Tutorial</h1>
         
         {isLoading ? (
@@ -64,34 +83,29 @@ const App = () => {
 
         <div className="space-y-8">
           <section>
-            <h2 className="text-xl font-semibold mb-2 text-[#6c89e0]">Step 1: Check Foundry Version</h2>
-            <p className="mb-4 text-gray-300">Let's start by checking the installed version of Foundry. Type the following command:</p>
-            <div className="bg-[#1C1E24] rounded-lg overflow-hidden">
-              <FoundryTerminal 
-                isFoundryInstalled={isFoundryInstalled} 
-                sessionToken={sessionToken} 
-              />
-            </div>
-            <p className="mt-2 text-sm text-gray-400">Expected output: The version number of your Foundry installation.</p>
+            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">File Editor</h2>
+            <p className="mb-4 text-gray-300">Edit your Foundry script here:</p>
+            {currentFile ? (
+              <FileEditor filename={currentFile} />
+            ) : (
+              <p className="text-yellow-500">No file found in the temporary folder.</p>
+            )}
           </section>
 
-          {/* Additional sections can be added here, following the same structure */}
-          
           <section>
-            <h2 className="text-xl font-semibold mb-2 text-[#6c89e0]">Additional Commands</h2>
-            <p className="mb-4 text-gray-300">Feel free to try out other Foundry commands here:</p>
+            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Foundry Terminal</h2>
+            <p className="mb-4 text-gray-300">Run Foundry commands here:</p>
             <div className="bg-[#1C1E24] rounded-lg overflow-hidden">
               <FoundryTerminal 
                 isFoundryInstalled={isFoundryInstalled} 
                 sessionToken={sessionToken} 
               />
             </div>
-            <p className="mt-2 text-sm text-gray-400">Experiment with different Foundry commands to learn more about its capabilities.</p>
           </section>
         </div>
 
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-2 text-[#6c89e0]">Further Resources</h2>
+          <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Further Resources</h2>
           <p className="text-gray-300">For more detailed information, check out the following resources:</p>
           <ul className="list-disc list-inside mt-2 text-[#61DAFB]">
             <li><a href="https://book.getfoundry.sh/" className="hover:underline">Foundry Book</a></li>

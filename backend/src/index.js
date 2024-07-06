@@ -164,6 +164,80 @@ app.post('/api/execute', (req, res) => {
   });
 });
 
+// New route to get file content
+app.get('/api/file/:filename', async (req, res) => {
+    const { filename } = req.params;
+    const sessionToken = req.cookies.sessionToken;
+  
+    if (!sessionToken || !sessions[sessionToken]) {
+      return res.status(401).json({ error: 'Invalid session' });
+    }
+  
+    const userDir = sessions[sessionToken].userDir;
+    const filePath = path.join(userDir, filename);
+  
+    try {
+      // Check if the file exists and is within the user's directory
+      await fs.access(filePath);
+      const content = await fs.readFile(filePath, 'utf8');
+      res.json({ content });
+    } catch (error) {
+      console.error(`Error reading file ${filePath}:`, error);
+      res.status(404).json({ error: 'File not found or cannot be read' });
+    }
+  });
+  
+  // New route to save file content
+  app.post('/api/file/:filename', async (req, res) => {
+    const { filename } = req.params;
+    const { content } = req.body;
+    const sessionToken = req.cookies.sessionToken;
+  
+    if (!sessionToken || !sessions[sessionToken]) {
+      return res.status(401).json({ error: 'Invalid session' });
+    }
+  
+    const userDir = sessions[sessionToken].userDir;
+    const filePath = path.join(userDir, filename);
+  
+    try {
+      // Ensure the file path is within the user's directory
+      if (!filePath.startsWith(userDir)) {
+        throw new Error('Invalid file path');
+      }
+      await fs.writeFile(filePath, content, 'utf8');
+      res.json({ message: 'File saved successfully' });
+    } catch (error) {
+      console.error(`Error writing file ${filePath}:`, error);
+      res.status(500).json({ error: 'Failed to save file' });
+    }
+  });
+
+// New route to get the first file in the user's directory
+app.get('/api/first-file', async (req, res) => {
+    const sessionToken = req.cookies.sessionToken;
+  
+    if (!sessionToken || !sessions[sessionToken]) {
+      return res.status(401).json({ error: 'Invalid session' });
+    }
+  
+    const userDir = sessions[sessionToken].userDir;
+  
+    try {
+      const files = await fs.readdir(userDir);
+      const firstFile = files.find(file => !file.startsWith('.') && file.endsWith('.js'));
+  
+      if (firstFile) {
+        res.json({ filename: firstFile });
+      } else {
+        res.status(404).json({ error: 'No suitable files found' });
+      }
+    } catch (error) {
+      console.error('Error reading directory:', error);
+      res.status(500).json({ error: 'Failed to read directory' });
+    }
+  });
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../../frontend/dist')));
 
