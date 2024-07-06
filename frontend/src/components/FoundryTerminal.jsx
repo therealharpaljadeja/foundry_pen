@@ -37,16 +37,7 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
       });
 
       if (!response.ok) {
-        // Handle the "Not so fast, nice try" error or any other errors
-        addToHistory('error', data.error || 'An error occurred while executing the command.');
-      } else {
-        if (data.error) {
-          addToHistory('error', data.error);
-        }
-        if (data.output) {
-          addToHistory('output', data.output);
-        }
-        addToHistory('system', `Command finished with exit code ${data.exitCode}`);
+        throw new Error('Failed to execute command');
       }
 
       const data = await response.json();
