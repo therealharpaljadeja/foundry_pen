@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import FoundryTerminal from './components/FoundryTerminal';
 
 const App = () => {
@@ -6,32 +6,31 @@ const App = () => {
   const [sessionToken, setSessionToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchSessionInfo = async () => {
-      try {
-        const response = await fetch('/api/session', {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch session');
-        }
-        const data = await response.json();
-        
-        setIsFoundryInstalled(data.foundryInstalled);
-        setSessionToken(data.sessionToken);
-        setIsLoading(false);
-        console.log('Session initialized, Foundry installed:', data.foundryInstalled);
-        return data.foundryInstalled;
-      } catch (error) {
-        console.error('Error fetching session:', error);
-        setIsLoading(false);
-        return false;
-        // Handle the error appropriately in the UI
+  const fetchSessionInfo = useCallback(async () => {
+    try {
+      const response = await fetch('/api/session', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch session');
       }
-    };
+      const data = await response.json();
+      
+      setIsFoundryInstalled(data.foundryInstalled);
+      setSessionToken(data.sessionToken);
+      setIsLoading(false);
+      console.log('Session info updated, Foundry installed:', data.foundryInstalled);
+      return data.foundryInstalled;
+    } catch (error) {
+      console.error('Error fetching session:', error);
+      setIsLoading(false);
+      return false;
+    }
+  }, []); // Empty dependency array means this function is created once and never recreated
 
+  useEffect(() => {
     fetchSessionInfo();
-  }, []);
+  }, [fetchSessionInfo]);
 
   useEffect(() => {
     let intervalId;
@@ -50,7 +49,7 @@ const App = () => {
         clearInterval(intervalId);
       }
     };
-  }, [isFoundryInstalled, isLoading]);
+  }, [isFoundryInstalled, isLoading, fetchSessionInfo]);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
