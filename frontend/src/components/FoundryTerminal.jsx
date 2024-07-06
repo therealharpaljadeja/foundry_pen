@@ -3,35 +3,12 @@ import Convert from 'ansi-to-html';
 
 const convert = new Convert({ newline: true });
 
-const FoundryTerminal = () => {
+const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
   const [command, setCommand] = useState('');
   const [history, setHistory] = useState([]);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const terminalRef = useRef(null);
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    const fetchSessionInfo = async () => {
-      try {
-        const response = await fetch('/api/session', {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch session');
-        }
-        const data = await response.json();
-        
-        setIsFoundryInstalled(data.foundryInstalled);
-        console.log('Session initialized, Foundry installed:', data.foundryInstalled);
-      } catch (error) {
-        console.error('Error fetching session:', error);
-        addToHistory('error', 'Failed to initialize session. Please refresh the page.');
-      }
-    };
-
-    fetchSessionInfo();
-  }, []);
 
   const addToHistory = (type, content) => {
     const htmlContent = convert.toHtml(content);
@@ -56,7 +33,7 @@ const FoundryTerminal = () => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ command })
+        body: JSON.stringify({ command, sessionToken })
       });
 
       if (!response.ok) {
@@ -104,9 +81,6 @@ const FoundryTerminal = () => {
       <h2 className="text-xl font-semibold text-blue-400 mb-2">
         Foundry Command Line
       </h2>
-      {!isFoundryInstalled && (
-        <p className="text-yellow-500 text-sm mb-2">Foundry is being installed. Please wait...</p>
-      )}
       <div 
         ref={terminalRef}
         className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
