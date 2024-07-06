@@ -64,7 +64,7 @@ const App = () => {
 
         <div className="space-y-8">
           <section>
-            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Step 1: Check Foundry Version</h2>
+            <h2 className="text-xl font-semibold mb-2 text-[#6c89e0]">Step 1: Check Foundry Version</h2>
             <p className="mb-4 text-gray-300">Let's start by checking the installed version of Foundry. Type the following command:</p>
             <div className="bg-[#1C1E24] rounded-lg overflow-hidden">
               <FoundryTerminal 
@@ -78,7 +78,7 @@ const App = () => {
           {/* Additional sections can be added here, following the same structure */}
           
           <section>
-            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Additional Commands</h2>
+            <h2 className="text-xl font-semibold mb-2 text-[#6c89e0]">Additional Commands</h2>
             <p className="mb-4 text-gray-300">Feel free to try out other Foundry commands here:</p>
             <div className="bg-[#1C1E24] rounded-lg overflow-hidden">
               <FoundryTerminal 
@@ -91,7 +91,7 @@ const App = () => {
         </div>
 
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Further Resources</h2>
+          <h2 className="text-xl font-semibold mb-2 text-[#6c89e0]">Further Resources</h2>
           <p className="text-gray-300">For more detailed information, check out the following resources:</p>
           <ul className="list-disc list-inside mt-2 text-[#61DAFB]">
             <li><a href="https://book.getfoundry.sh/" className="hover:underline">Foundry Book</a></li>
