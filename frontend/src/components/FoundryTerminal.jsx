@@ -3,8 +3,6 @@ import Convert from 'ansi-to-html';
 
 const convert = new Convert({ newline: true });
 
-const API_URL = 'https://foundry-pen-86c9c65f23b0.herokuapp.com'
-
 const FoundryTerminal = () => {
   const [command, setCommand] = useState('');
   const [history, setHistory] = useState([]);
@@ -16,7 +14,7 @@ const FoundryTerminal = () => {
   useEffect(() => {
     const fetchSessionInfo = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/session`, {
+        const response = await fetch('/api/session', {
           credentials: 'include'
         });
         if (!response.ok) {
@@ -52,7 +50,7 @@ const FoundryTerminal = () => {
     addToHistory('command', command);
 
     try {
-      const response = await fetch(`${API_URL}/api/execute`, {
+      const response = await fetch('/api/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

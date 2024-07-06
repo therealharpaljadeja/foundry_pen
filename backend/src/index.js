@@ -11,7 +11,7 @@ const cookieParser = require('cookie-parser');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8879;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://foundry-pen-86c9c65f23b0.herokuapp.com',
@@ -115,16 +115,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// API routes
 app.get('/api/session', (req, res) => {
-    const sessionToken = req.sessionToken;
-    if (!sessionToken || !sessions[sessionToken]) {
-      return res.status(400).json({ error: 'Invalid session' });
-    }
-    res.json({ 
-      sessionToken: sessionToken,
-      foundryInstalled: sessions[sessionToken].foundryInstalled
-    });
+  const sessionToken = req.sessionToken;
+  if (!sessionToken || !sessions[sessionToken]) {
+    return res.status(400).json({ error: 'Invalid session' });
+  }
+  res.json({ 
+    sessionToken: sessionToken,
+    foundryInstalled: sessions[sessionToken].foundryInstalled
   });
+});
 
 app.post('/api/execute', (req, res) => {
   const { command } = req.body;
@@ -163,14 +164,14 @@ app.post('/api/execute', (req, res) => {
   });
 });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/build/index.html'));
-  });
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
 
-// Add a simple root route for API health check
-app.get('/', (req, res) => {
-    res.json({ message: 'Foundry API is running' });
-  });  
+// The "catch-all" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
