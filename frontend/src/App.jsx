@@ -26,7 +26,7 @@ const App = () => {
       setIsLoading(false);
       return false;
     }
-  }, []); // Empty dependency array means this function is created once and never recreated
+  }, []);
 
   useEffect(() => {
     fetchSessionInfo();
@@ -52,87 +52,51 @@ const App = () => {
   }, [isFoundryInstalled, isLoading, fetchSessionInfo]);
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto">
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <div className="max-w-md mx-auto">
-            <h1 className="text-2xl font-semibold mb-6">Foundry CLI Tutorial</h1>
-            
-            {isLoading ? (
-              <p className="text-blue-500 text-sm mb-4">Loading session information...</p>
-            ) : !isFoundryInstalled ? (
-              <p className="text-yellow-500 text-sm mb-4">Foundry is being installed. Please wait...</p>
-            ) : null}
+    <div className="min-h-screen bg-[#23272F] text-white font-sans">
+      <div className="max-w-3xl mx-auto p-8">
+        <h1 className="text-3xl font-bold mb-6">Foundry CLI Tutorial</h1>
+        
+        {isLoading ? (
+          <p className="text-[#61DAFB] text-sm mb-4">Loading session information...</p>
+        ) : !isFoundryInstalled ? (
+          <p className="text-yellow-500 text-sm mb-4">Foundry is being installed. Please wait...</p>
+        ) : null}
 
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 1: Check Foundry Version</h2>
-              <p className="mb-4">Let's start by checking the installed version of Foundry. Type the following command:</p>
+        <div className="space-y-8">
+          <section>
+            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Step 1: Check Foundry Version</h2>
+            <p className="mb-4 text-gray-300">Let's start by checking the installed version of Foundry. Type the following command:</p>
+            <div className="bg-[#1C1E24] rounded-lg overflow-hidden">
               <FoundryTerminal 
                 isFoundryInstalled={isFoundryInstalled} 
                 sessionToken={sessionToken} 
               />
-              <p className="mt-2 text-sm text-gray-600">Expected output: The version number of your Foundry installation.</p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 2: Initialize a New Foundry Project</h2>
-              <p className="mb-4">Now, let's create a new Foundry project. Run the following command:</p>
-              <FoundryTerminal 
-                isFoundryInstalled={isFoundryInstalled} 
-                sessionToken={sessionToken} 
-              />
-              <p className="mt-2 text-sm text-gray-600">This will create a new Foundry project in the current directory.</p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 3: Explore the Project Structure</h2>
-              <p className="mb-4">Let's see what files and directories were created. Use the ls command:</p>
-              <FoundryTerminal 
-                isFoundryInstalled={isFoundryInstalled} 
-                sessionToken={sessionToken} 
-              />
-              <p className="mt-2 text-sm text-gray-600">You should see the typical Foundry project structure, including directories like 'src' and 'test'.</p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 4: Compile the Project</h2>
-              <p className="mb-4">Now, let's compile the Solidity contracts in our project:</p>
-              <FoundryTerminal 
-                isFoundryInstalled={isFoundryInstalled} 
-                sessionToken={sessionToken} 
-              />
-              <p className="mt-2 text-sm text-gray-600">This will compile all contracts in the 'src' directory.</p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Step 5: Run Tests</h2>
-              <p className="mb-4">Let's run the tests for our project:</p>
-              <FoundryTerminal 
-                isFoundryInstalled={isFoundryInstalled} 
-                sessionToken={sessionToken} 
-              />
-              <p className="mt-2 text-sm text-gray-600">This will run all tests in the 'test' directory.</p>
-            </section>
-
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Additional Commands</h2>
-              <p className="mb-4">Feel free to try out other Foundry commands here:</p>
-              <FoundryTerminal 
-                isFoundryInstalled={isFoundryInstalled} 
-                sessionToken={sessionToken} 
-              />
-              <p className="mt-2 text-sm text-gray-600">Experiment with different Foundry commands to learn more about its capabilities.</p>
-            </section>
-
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold mb-2">Further Resources</h2>
-              <p>For more detailed information, check out the following resources:</p>
-              <ul className="list-disc list-inside mt-2">
-                <li><a href="https://book.getfoundry.sh/" className="text-blue-500 hover:underline">Foundry Book</a></li>
-                <li><a href="https://github.com/foundry-rs/foundry" className="text-blue-500 hover:underline">Foundry GitHub Repository</a></li>
-              </ul>
             </div>
-          </div>
+            <p className="mt-2 text-sm text-gray-400">Expected output: The version number of your Foundry installation.</p>
+          </section>
+
+          {/* Additional sections can be added here, following the same structure */}
+          
+          <section>
+            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Additional Commands</h2>
+            <p className="mb-4 text-gray-300">Feel free to try out other Foundry commands here:</p>
+            <div className="bg-[#1C1E24] rounded-lg overflow-hidden">
+              <FoundryTerminal 
+                isFoundryInstalled={isFoundryInstalled} 
+                sessionToken={sessionToken} 
+              />
+            </div>
+            <p className="mt-2 text-sm text-gray-400">Experiment with different Foundry commands to learn more about its capabilities.</p>
+          </section>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Further Resources</h2>
+          <p className="text-gray-300">For more detailed information, check out the following resources:</p>
+          <ul className="list-disc list-inside mt-2 text-[#61DAFB]">
+            <li><a href="https://book.getfoundry.sh/" className="hover:underline">Foundry Book</a></li>
+            <li><a href="https://github.com/foundry-rs/foundry" className="hover:underline">Foundry GitHub Repository</a></li>
+          </ul>
         </div>
       </div>
     </div>

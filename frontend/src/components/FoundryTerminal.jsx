@@ -77,19 +77,16 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
   }, [history]);
 
   return (
-    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg shadow-lg">
-      <h2 className="text-xl font-semibold text-blue-400 mb-2">
-        Foundry Command Line
-      </h2>
+    <div className="text-white p-4 font-mono text-sm">
       <div 
         ref={terminalRef}
-        className="bg-gray-800 rounded-lg p-3 h-48 overflow-auto mb-2 font-mono text-sm"
+        className="h-48 overflow-auto mb-2"
       >
         {history.map((item, index) => (
           <div 
             key={index} 
             className={`mb-1 ${
-              item.type === 'command' ? 'text-green-400' : 
+              item.type === 'command' ? 'text-[#5A8BFF]' : 
               item.type === 'error' ? 'text-red-400' : 
               item.type === 'system' ? 'text-yellow-300' :
               'text-gray-300'
@@ -98,8 +95,8 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
           />
         ))}
       </div>
-      <div className="flex items-center bg-gray-800 rounded-lg p-2">
-        <span className="text-green-400 mr-2"></span>
+      <div className="flex items-center bg-[#282C34] rounded p-2">
+        <span className="text-green-400 mr-2">$</span>
         <input
           ref={inputRef}
           type="text"
@@ -108,7 +105,7 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
           onKeyDown={handleKeyDown}
           placeholder="Enter Foundry command"
           disabled={isExecuting || !isFoundryInstalled}
-          className="bg-transparent flex-grow outline-none text-gray-100 placeholder-gray-500 text-sm"
+          className="bg-transparent flex-grow outline-none text-white placeholder-gray-500"
         />
       </div>
     </div>
