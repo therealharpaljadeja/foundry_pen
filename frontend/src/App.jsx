@@ -82,7 +82,7 @@ const App = () => {
         ) : null}
 
         <div className="space-y-8">
-          <section>
+          {/* <section>
             <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">File Editor</h2>
             <p className="mb-4 text-gray-300">Edit your Foundry script here:</p>
             {currentFile ? (
@@ -90,7 +90,7 @@ const App = () => {
             ) : (
               <p className="text-yellow-500">No file found in the temporary folder.</p>
             )}
-          </section>
+          </section> */}
 
           <section>
             <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Foundry Terminal</h2>

@@ -139,8 +139,12 @@ app.post('/api/execute', (req, res) => {
     return res.status(400).json({ error: 'Foundry is still being installed. Please wait.' });
   }
 
-  const env = Object.create(process.env);
-  env.PATH = `${env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`;
+  const env = {
+    ...process.env,
+    PATH: `${process.env.PATH}:${path.join(process.env.HOME, '.foundry/bin')}`,
+    BASE_SEPOLIA_RPC: process.env.BASE_SEPOLIA_RPC,
+    PRIVATE_KEY: process.env.PRIVATE_KEY
+  };
 
   const child = spawn(command, { shell: true, cwd: session.userDir, env });
 
@@ -224,17 +228,24 @@ app.get('/api/first-file', async (req, res) => {
     const userDir = sessions[sessionToken].userDir;
   
     try {
+      console.log(`Attempting to read directory: ${userDir}`);
       const files = await fs.readdir(userDir);
-      const firstFile = files.find(file => !file.startsWith('.') && file.endsWith('.js'));
+      console.log(`Files in directory: ${files.join(', ')}`);
   
-      if (firstFile) {
+      const jsFiles = files.filter(file => !file.startsWith('.') && file.endsWith('.sol'));
+      console.log(`Solidity files found: ${jsFiles.join(', ')}`);
+  
+      if (jsFiles.length > 0) {
+        const firstFile = jsFiles[0];
+        console.log(`Returning first file: ${firstFile}`);
         res.json({ filename: firstFile });
       } else {
+        console.log('No suitable files found');
         res.status(404).json({ error: 'No suitable files found' });
       }
     } catch (error) {
-      console.error('Error reading directory:', error);
-      res.status(500).json({ error: 'Failed to read directory' });
+      console.error(`Error reading directory ${userDir}:`, error);
+      res.status(500).json({ error: 'Failed to read directory', details: error.message });
     }
   });
 
