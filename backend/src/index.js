@@ -127,6 +127,19 @@ app.get('/api/session', (req, res) => {
   });
 });
 
+const isSensitiveCommand = (command) => {
+    const sensitivePatterns = [
+      /echo.*\$PRIVATE_KEY/i,
+      /echo.*\$BASE_SEPOLIA_RPC/i,
+      /cat.*PRIVATE_KEY/i,
+      /cat.*BASE_SEPOLIA_RPC/i,
+      /print.*PRIVATE_KEY/i,
+      /print.*BASE_SEPOLIA_RPC/i
+    ];
+  
+    return sensitivePatterns.some(pattern => pattern.test(command));
+  };
+
 app.post('/api/execute', (req, res) => {
   const { command } = req.body;
   const session = sessions[req.sessionToken];
@@ -137,6 +150,10 @@ app.post('/api/execute', (req, res) => {
 
   if (!session.foundryInstalled) {
     return res.status(400).json({ error: 'Foundry is still being installed. Please wait.' });
+  }
+
+  if (isSensitiveCommand(command)) {
+    return res.status(403).json({ error: 'Not so fast, nice try' });
   }
 
   const env = {
