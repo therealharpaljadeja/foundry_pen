@@ -4,6 +4,7 @@ import FoundryTerminal from './components/FoundryTerminal';
 const App = () => {
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSessionInfo = async () => {
@@ -18,15 +19,38 @@ const App = () => {
         
         setIsFoundryInstalled(data.foundryInstalled);
         setSessionToken(data.sessionToken);
+        setIsLoading(false);
         console.log('Session initialized, Foundry installed:', data.foundryInstalled);
+        return data.foundryInstalled;
       } catch (error) {
         console.error('Error fetching session:', error);
+        setIsLoading(false);
+        return false;
         // Handle the error appropriately in the UI
       }
     };
 
     fetchSessionInfo();
   }, []);
+
+  useEffect(() => {
+    let intervalId;
+
+    if (!isFoundryInstalled && !isLoading) {
+      intervalId = setInterval(async () => {
+        const installed = await fetchSessionInfo();
+        if (installed) {
+          clearInterval(intervalId);
+        }
+      }, 5000); // Check every 5 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isFoundryInstalled, isLoading]);
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
@@ -35,9 +59,11 @@ const App = () => {
           <div className="max-w-md mx-auto">
             <h1 className="text-2xl font-semibold mb-6">Foundry CLI Tutorial</h1>
             
-            {!isFoundryInstalled && (
+            {isLoading ? (
+              <p className="text-blue-500 text-sm mb-4">Loading session information...</p>
+            ) : !isFoundryInstalled ? (
               <p className="text-yellow-500 text-sm mb-4">Foundry is being installed. Please wait...</p>
-            )}
+            ) : null}
 
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-2">Step 1: Check Foundry Version</h2>
