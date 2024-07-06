@@ -50,7 +50,7 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
       }
       addToHistory('system', `Command finished with exit code ${data.exitCode}`);
     } catch (error) {
-      addToHistory('error', `Failed to execute command: ${error.message}`);
+      addToHistory('error', `${error.message}`);
     }
 
     setCommand('');
