@@ -3,6 +3,13 @@ import Convert from 'ansi-to-html';
 
 const convert = new Convert({ newline: true });
 
+const Spinner = () => (
+  <div className="flex items-center justify-center">
+    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+    <span className="ml-2 text-green-500">Executing command...</span>
+  </div>
+);
+
 const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
   const [command, setCommand] = useState('');
   const [history, setHistory] = useState([]);
@@ -74,7 +81,7 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  }, [history]);
+  }, [history, isExecuting]);
 
   return (
     <div className="text-white p-4 font-mono text-sm">
@@ -96,17 +103,23 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
         ))}
       </div>
       <div className="flex items-center bg-[#282C34] rounded p-2">
-        <span className="text-green-400 mr-2">$</span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={command}
-          onChange={(e) => setCommand(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Enter Foundry command"
-          disabled={isExecuting || !isFoundryInstalled}
-          className="bg-transparent flex-grow outline-none text-white placeholder-gray-500"
-        />
+      {isExecuting ? (
+          <Spinner />
+        ) : (
+          <>
+            <span className="text-green-400 mr-2">$</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter Foundry command"
+              disabled={isExecuting || !isFoundryInstalled}
+              className="bg-transparent flex-grow outline-none text-white placeholder-gray-500"
+            />
+          </>
+        )}
       </div>
     </div>
   );
