@@ -3,13 +3,13 @@ import FoundryTerminal from './components/FoundryTerminal';
 import TableOfContents from './components/TableOfContents';
 
 const CodeBlock = ({ children }) => (
-  <pre className="bg-[#1C1E24] text-red p-4 rounded-lg overflow-x-auto">
+  <pre className="bg-[#1C1E24] text-white p-4 rounded-lg overflow-x-auto">
     <code>{children}</code>
   </pre>
 );
 
 const CodeSnippet = ({ children }) => (
-  <code className="bg-[#1C1E24] text-white px-1.5 py-0.5 rounded text-sm font-mono">
+  <code className="bg-[#1C1E24] text-[#FF6B6B] px-1.5 py-0.5 rounded text-sm font-mono">
     {children}
   </code>
 );
