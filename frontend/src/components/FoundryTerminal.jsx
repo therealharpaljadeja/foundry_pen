@@ -84,10 +84,10 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
   }, [history, isExecuting]);
 
   return (
-    <div className="text-white p-4 font-mono text-sm">
+    <div className="text-white p-2 md:p-4 font-mono text-xs md:text-sm">
       <div 
         ref={terminalRef}
-        className="h-48 overflow-auto mb-2"
+        className="h-36 md:h-48 overflow-auto mb-2"
       >
         {history.map((item, index) => (
           <div 
@@ -116,7 +116,7 @@ const FoundryTerminal = ({ isFoundryInstalled, sessionToken }) => {
               onKeyDown={handleKeyDown}
               placeholder="Enter Foundry command"
               disabled={isExecuting || !isFoundryInstalled}
-              className="bg-transparent flex-grow outline-none text-white placeholder-gray-500"
+              className="bg-transparent flex-grow outline-none text-white placeholder-gray-500 text-xs md:text-sm w-full"
             />
           </>
         )}

@@ -34,7 +34,7 @@ const TableOfContents = () => {
   ];
 
   return (
-    <nav className="sticky top-8 max-h-[calc(100vh-4rem)] overflow-auto p-4 bg-[#1C1E24] rounded-lg">
+    <nav className="md:sticky md:top-8 max-h-[calc(100vh-4rem)] overflow-auto p-4 bg-[#1C1E24] rounded-lg">
       <h3 className="text-lg font-semibold mb-2 text-[#61DAFB]">On This Page</h3>
       <ul className="space-y-2">
         {sections.map(({ id, title }) => (
