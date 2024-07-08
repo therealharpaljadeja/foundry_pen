@@ -88,7 +88,7 @@ const App = () => {
             <section id="overview">
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-[#6c72e0]">Overview</h2>
               <p className="mb-4 text-gray-300 font-light">
-                In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's `forge` and `cast` tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
+                In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's <code>forge</code> and <code>cast</code> tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
               </p>
             </section>
 
