@@ -8,6 +8,12 @@ const CodeBlock = ({ children }) => (
   </pre>
 );
 
+const CodeSnippet = ({ children }) => (
+  <code className="bg-[#1C1E24] text-white px-1.5 py-0.5 rounded text-sm font-mono">
+    {children}
+  </code>
+);
+
 const App = () => {
   const [isFoundryInstalled, setIsFoundryInstalled] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
@@ -88,7 +94,7 @@ const App = () => {
             <section id="overview">
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-[#6c72e0]">Overview</h2>
               <p className="mb-4 text-gray-300 font-light">
-                In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's <code>forge</code> and <code>cast</code> tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
+                In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's <CodeSnippet> forge </CodeSnippet> and <CodeSnippet> cast </CodeSnippet> tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
               </p>
             </section>
 
