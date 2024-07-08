@@ -72,7 +72,7 @@ const App = () => {
           ) : null}
 
           <section id="overview">
-            <h2 className="text-2xl font-semibold mb-4 text-[#E06C75]">Overview</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-[#6c72e0]">Overview</h2>
             <p className="mb-4 text-gray-300 font-light">
               In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's `forge` and `cast` tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
             </p>
@@ -80,7 +80,7 @@ const App = () => {
 
           <div className="space-y-8">
             <section id="init-project">
-              <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">1. Initialize Your Foundry Project</h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">1. Initialize Your Foundry Project</h2>
               <p className="mb-4 text-gray-300 font-light">To start, we'll create the default folder structure with template contracts using the `forge init` command. This command sets up a new Foundry project with a sample contract in the `src` folder.</p>
               <CodeBlock>forge init</CodeBlock>
               <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
@@ -95,7 +95,7 @@ const App = () => {
             </section>
 
             <section id="evaluate-storage">
-              <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">2. Evaluate the Storage of the Contract</h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">2. Evaluate the Storage of the Contract</h2>
               <p className="mb-4 text-gray-300 font-light">Next, we'll use `forge` to evaluate the storage layout of the default contract found in the `src` folder. This step provides insights into how the contract's storage is structured. Use the following command to inspect its storage:</p>
               <CodeBlock>forge inspect Counter storage</CodeBlock>
               <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
@@ -110,7 +110,7 @@ const App = () => {
             </section>
 
             <section id="deploy-contract">
-              <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">3. Deploy the Counter Contract to Base Sepolia Testnet</h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">3. Deploy the Counter Contract to Base Sepolia Testnet</h2>
               <p className="mb-4 text-gray-300 font-light">We'll deploy the `Counter` contract to the Base Sepolia testnet. Deploying to a testnet allows us to interact with the contract without using real ETH.</p>
               <p className="mb-4 text-gray-300 font-light">First, ensure you have a Base Sepolia testnet RPC URL and a private key for deployment. This document comes with `$BASE_SEPOLIA_RPC` and `$PRIVATE_KEY` already defined. The private key account is funded with testnet eth so you can execute transactions!</p>
               <p className="mb-4 text-gray-300 font-light">Now to deploy the contract, use the following:</p>
@@ -127,7 +127,7 @@ const App = () => {
             </section>
 
             <section id="evaluate-deployed">
-              <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">4. Evaluate the Storage of the Deployed Contract</h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">4. Evaluate the Storage of the Deployed Contract</h2>
               <p className="mb-4 text-gray-300 font-light">Once the contract is deployed, we can evaluate its storage on the blockchain. Use the contract address returned from the deployment step above and place that where it says `CONTRACT_ADDRESS` below:</p>
               <CodeBlock>cast storage --rpc-url $BASE_SEPOLIA_RPC CONTRACT_ADDRESS 0</CodeBlock>
               <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
@@ -142,7 +142,7 @@ const App = () => {
             </section>
 
             <section id="increment-counter">
-              <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">5. Call the Counter Contract to Increment the Number</h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">5. Call the Counter Contract to Increment the Number</h2>
               <p className="mb-4 text-gray-300 font-light">Next, we will call the `increment` function of the `Counter` contract to change its storage state. This will allow us to confirm that the storage slot we previously evaluated was in fact where number was stored:</p>
               <CodeBlock>cast send --rpc-url $BASE_SEPOLIA_RPC --private-key $PRIVATE_KEY CONTRACT_ADDRESS "increment()"</CodeBlock>
               <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
@@ -157,7 +157,7 @@ const App = () => {
             </section>
 
             <section id="evaluate-again">
-              <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">6. Evaluate the Remote Contract's Storage Again</h2>
+              <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">6. Evaluate the Remote Contract's Storage Again</h2>
               <p className="mb-4 text-gray-300 font-light">Finally, we'll re-evaluate the storage of the deployed contract to see how it has changed after the `increment` function call.</p>
               <CodeBlock>cast storage --rpc-url $BASE_SEPOLIA_RPC CONTRACT_ADDRESS 0</CodeBlock>
               <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
@@ -173,7 +173,7 @@ const App = () => {
           </div>
 
           <section id="further-resources" className="mt-8">
-            <h2 className="text-xl font-semibold mb-2 text-[#E06C75]">Further Resources</h2>
+            <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">Further Resources</h2>
             <p className="text-gray-300 font-light">For more detailed information, check out the following resources:</p>
             <ul className="list-disc list-inside mt-2 text-[#61DAFB]">
               <li><a href="https://book.getfoundry.sh/" className="hover:underline">Foundry Book</a></li>
