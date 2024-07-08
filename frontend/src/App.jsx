@@ -3,7 +3,7 @@ import FoundryTerminal from './components/FoundryTerminal';
 import TableOfContents from './components/TableOfContents';
 
 const CodeBlock = ({ children }) => (
-  <pre className="bg-[#1C1E24] text-white p-4 rounded-lg overflow-x-auto">
+  <pre className="bg-[#1C1E24] text-red p-4 rounded-lg overflow-x-auto">
     <code>{children}</code>
   </pre>
 );
