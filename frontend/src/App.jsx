@@ -94,14 +94,14 @@ const App = () => {
             <section id="overview">
               <h2 className="text-xl md:text-2xl font-semibold mb-4 text-[#6c72e0]">Overview</h2>
               <p className="mb-4 text-gray-300 font-light">
-                In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's <CodeSnippet> forge </CodeSnippet> and <CodeSnippet> cast </CodeSnippet> tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
+                In this tutorial, we'll guide you through evaluating the storage layout and values of a Solidity contract using Foundry's <CodeSnippet>forge</CodeSnippet> and <CodeSnippet>cast</CodeSnippet> tools. You'll be able to follow along and execute each step using our built-in command line interface, with Foundry pre-installed.
               </p>
             </section>
 
             <div className="space-y-8">
               <section id="init-project">
                 <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">1. Initialize Your Foundry Project</h2>
-                <p className="mb-4 text-gray-300 font-light">To start, we'll create the default folder structure with template contracts using the `forge init` command. This command sets up a new Foundry project with a sample contract in the `src` folder.</p>
+                <p className="mb-4 text-gray-300 font-light">To start, we'll create the default folder structure with template contracts using the <CodeSnippet>forge init</CodeSnippet> command. This command sets up a new Foundry project and includes a sample contract in the <CodeSnippet>src</CodeSnippet> folder called Counter.sol.</p>
                 <CodeBlock>forge init</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
                   <FoundryTerminal 
@@ -110,13 +110,13 @@ const App = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400 font-light">
-                  <em>Explanation:</em> The forge init command initializes a new Foundry project in the current folder. It creates a directory structure with a `src` folder containing a sample Solidity contract.
+                  <em>Explanation:</em> The <CodeSnippet>forge init</CodeSnippet> command initializes a new Foundry project in the current folder. It creates a directory structure with a <CodeSnippet>src</CodeSnippet> folder containing a sample Solidity contract.
                 </p>
               </section>
 
               <section id="evaluate-storage">
-                <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">2. Evaluate the Storage of the Contract</h2>
-                <p className="mb-4 text-gray-300 font-light">Next, we'll use `forge` to evaluate the storage layout of the default contract found in the `src` folder. This step provides insights into how the contract's storage is structured. Use the following command to inspect its storage:</p>
+                <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">2. Evaluate the Storage of the Development Contract</h2>
+                <p className="mb-4 text-gray-300 font-light">Next, we'll use <CodeSnippet>forge inspect</CodeSnippet> to evaluate the storage layout of the default contract found in the <CodeSnippet>src</CodeSnippet> folder. This step provides insights into how the contract's storage is structured. <strong>Note that this command only outlines the storage structure of the contract based on the source code. It does not look at a deployed instance to read values in storage meaning the values in storage will remain the same unless you change the contract code itself.</strong> Use the following command to inspect <CodeSnippet>Counter.sol</CodeSnippet> storage:</p>
                 <CodeBlock>forge inspect Counter storage</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
                   <FoundryTerminal 
@@ -125,14 +125,14 @@ const App = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400 font-light">
-                  <em>Explanation:</em> The `forge inspect Counter storage` command examines the storage layout of the `Counter` contract. It details the storage slots and variable types used in the contract.
+                  <em>Explanation:</em> The <CodeSnippet>forge inspect Counter storage</CodeSnippet> command examines the storage layout of the `Counter` contract in the Counter.sol file. It details the storage slots and variable types used in the contract.
                 </p>
               </section>
 
               <section id="deploy-contract">
                 <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">3. Deploy the Counter Contract to Base Sepolia Testnet</h2>
-                <p className="mb-4 text-gray-300 font-light">We'll deploy the `Counter` contract to the Base Sepolia testnet. Deploying to a testnet allows us to interact with the contract without using real ETH.</p>
-                <p className="mb-4 text-gray-300 font-light">First, ensure you have a Base Sepolia testnet RPC URL and a private key for deployment. This document comes with `$BASE_SEPOLIA_RPC` and `$PRIVATE_KEY` already defined. The private key account is funded with testnet eth so you can execute transactions!</p>
+                <p className="mb-4 text-gray-300 font-light">We'll deploy the <CodeSnippet>Counter</CodeSnippet> contract to the Base Sepolia testnet. Deploying to a testnet allows us to interact with the contract without using real ETH.</p>
+                <p className="mb-4 text-gray-300 font-light">First, ensure you have a Base Sepolia testnet RPC URL and a private key for deployment. <strong>This document comes with <CodeSnippet>$BASE_SEPOLIA_RPC</CodeSnippet> and <CodeSnippet>$PRIVATE_KEY</CodeSnippet> already defined. The private key account is funded with testnet eth so you can execute transactions!</strong></p>
                 <p className="mb-4 text-gray-300 font-light">Now to deploy the contract, use the following:</p>
                 <CodeBlock>forge create --rpc-url $BASE_SEPOLIA_RPC --private-key $PRIVATE_KEY src/Counter.sol:Counter</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
