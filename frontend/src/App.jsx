@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import FoundryTerminal from './components/FoundryTerminal';
-import FileEditor from './components/FileEditor';
 import TableOfContents from './components/TableOfContents';
 
 const CodeBlock = ({ children }) => (
@@ -37,26 +36,9 @@ const App = () => {
     }
   }, []);
 
-  const fetchFirstFile = useCallback(async () => {
-    try {
-      const response = await fetch('/api/first-file', {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch first file');
-      }
-      const data = await response.json();
-      setCurrentFile(data.filename);
-    } catch (error) {
-      console.error('Error fetching first file:', error);
-      setCurrentFile(null);
-    }
-  }, []);
-
   useEffect(() => {
     fetchSessionInfo();
-    fetchFirstFile();
-  }, [fetchSessionInfo, fetchFirstFile]);
+  }, [fetchSessionInfo]);
 
   useEffect(() => {
     let intervalId;
