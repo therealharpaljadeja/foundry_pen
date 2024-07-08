@@ -104,7 +104,7 @@ const App = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400 font-light">
-                  <em>Explanation:</em> The <CodeBlock>forge init</CodeBlock> command initializes a new Foundry project in the current folder. It creates a directory structure with a `src` folder containing a sample Solidity contract.
+                  <em>Explanation:</em> The forge init command initializes a new Foundry project in the current folder. It creates a directory structure with a `src` folder containing a sample Solidity contract.
                 </p>
               </section>
 
