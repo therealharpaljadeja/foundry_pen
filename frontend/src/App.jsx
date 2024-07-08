@@ -131,8 +131,8 @@ const App = () => {
 
               <section id="deploy-contract">
                 <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">3. Deploy the Counter Contract to Base Sepolia Testnet</h2>
-                <p className="mb-4 text-gray-300 font-light">We'll deploy the <CodeSnippet>Counter</CodeSnippet> contract to the Base Sepolia testnet. Deploying to a testnet allows us to interact with the contract without using real ETH.</p>
-                <p className="mb-4 text-gray-300 font-light">First, ensure you have a Base Sepolia testnet RPC URL and a private key for deployment. <strong>This document comes with <CodeSnippet>$BASE_SEPOLIA_RPC</CodeSnippet> and <CodeSnippet>$PRIVATE_KEY</CodeSnippet> already defined. The private key account is funded with testnet eth so you can execute transactions!</strong></p>
+                <p className="mb-4 text-gray-300 font-light">We'll deploy the <CodeSnippet>Counter</CodeSnippet> contract to the Base Sepolia testnet. This will allow us to explore how we can use <CodeSnippet>cast</CodeSnippet> to read the values in storage slots of deployed contracts. Deploying to a testnet allows us to interact with the contract without using real ETH.</p>
+                <p className="mb-4 text-gray-300 font-light">First, ensure you have a Base Sepolia testnet RPC URL and a private key for deployment. <strong>This document comes with <CodeSnippet>$BASE_SEPOLIA_RPC</CodeSnippet> and <CodeSnippet>$PRIVATE_KEY</CodeSnippet> already defined. The account associated with theprivate key is already funded with testnet eth so you can execute transactions!</strong></p>
                 <p className="mb-4 text-gray-300 font-light">Now to deploy the contract, use the following:</p>
                 <CodeBlock>forge create --rpc-url $BASE_SEPOLIA_RPC --private-key $PRIVATE_KEY src/Counter.sol:Counter</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
@@ -142,13 +142,13 @@ const App = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400 font-light">
-                  <em>Explanation:</em> The `forge create` command deploys the `Counter` contract to the Sepolia testnet using the specified RPC URL and private key.
+                  <em>Explanation:</em> The <CodeSnippet>forge create</CodeSnippet> command deploys the <CodeSnippet>Counter</CodeSnippet> contract to the Sepolia testnet using the specified RPC URL and private key.
                 </p>
               </section>
 
               <section id="evaluate-deployed">
                 <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">4. Evaluate the Storage of the Deployed Contract</h2>
-                <p className="mb-4 text-gray-300 font-light">Once the contract is deployed, we can evaluate its storage on the blockchain. Use the contract address returned from the deployment step above and place that where it says `CONTRACT_ADDRESS` below:</p>
+                <p className="mb-4 text-gray-300 font-light">Once the contract is deployed, we can evaluate its storage on the blockchain. Use the contract address returned from the deployment step above and place that where it says <CodeSnippet>CONTRACT_ADDRESS</CodeSnippet> below:</p>
                 <CodeBlock>cast storage --rpc-url $BASE_SEPOLIA_RPC CONTRACT_ADDRESS 0</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
                   <FoundryTerminal 
@@ -157,13 +157,13 @@ const App = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400 font-light">
-                  <em>Explanation:</em> The `cast storage` command queries the storage of the deployed contract at the specified address. The `0` at the end specifies the storage slot to inspect. In the Counter contract, the `number` variable is stored in the first storage slot, which is the 0 slot.
+                  <em>Explanation:</em> The <CodeSnippet>cast storage</CodeSnippet> command queries the storage of the deployed contract at the specified address. The <CodeSnippet>0</CodeSnippet> at the end specifies the storage slot to inspect. In the Counter contract, the <CodeSnippet>number</CodeSnippet> variable is stored in the first storage slot, which is the 0 slot.
                 </p>
               </section>
 
               <section id="increment-counter">
                 <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">5. Call the Counter Contract to Increment the Number</h2>
-                <p className="mb-4 text-gray-300 font-light">Next, we will call the `increment` function of the `Counter` contract to change its storage state. This will allow us to confirm that the storage slot we previously evaluated was in fact where number was stored:</p>
+                <p className="mb-4 text-gray-300 font-light">Next, we will call the <CodeSnippet>increment</CodeSnippet> function of the <CodeSnippet>Counter</CodeSnippet> contract to change its storage state. This will allow us to confirm that the storage slot we previously evaluated was in fact where number was stored:</p>
                 <CodeBlock>cast send --rpc-url $BASE_SEPOLIA_RPC --private-key $PRIVATE_KEY CONTRACT_ADDRESS "increment()"</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
                   <FoundryTerminal 
@@ -172,13 +172,13 @@ const App = () => {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400 font-light">
-                  <em>Explanation:</em> The `cast send` command sends a transaction to the `Counter` contract to call the `increment` function, which modifies the contract's storage.
+                  <em>Explanation:</em> The <CodeSnippet>cast send</CodeSnippet> command sends a transaction to the <CodeSnippet>Counter</CodeSnippet> contract to call the <CodeSnippet>increment</CodeSnippet> function, which modifies the contract's storage.
                 </p>
               </section>
 
               <section id="evaluate-again">
                 <h2 className="text-xl font-semibold mb-2 text-[#6c72e0]">6. Evaluate the Remote Contract's Storage Again</h2>
-                <p className="mb-4 text-gray-300 font-light">Finally, we'll re-evaluate the storage of the deployed contract to see how it has changed after the `increment` function call.</p>
+                <p className="mb-4 text-gray-300 font-light">Finally, we'll re-evaluate the storage of the deployed contract to see how it has changed after the <CodeSnippet>increment</CodeSnippet> function call.</p>
                 <CodeBlock>cast storage --rpc-url $BASE_SEPOLIA_RPC CONTRACT_ADDRESS 0</CodeBlock>
                 <div className="bg-[#1C1E24] rounded-lg overflow-hidden mt-2">
                   <FoundryTerminal 
