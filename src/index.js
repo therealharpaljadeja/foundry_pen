@@ -17,7 +17,6 @@ app.use(
     cors({
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
         credentials: true,
-        sameSite: "none",
     })
 );
 app.use(express.json());
@@ -128,6 +127,7 @@ app.use((req, res, next) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 24 * 60 * 60 * 1000, // 1 day
+        sameSite: "none",
     });
     next();
 });
