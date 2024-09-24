@@ -57,20 +57,17 @@ if ! wait_for_foundry_installation; then
 fi
 
 # Configure Git user name and email globally
-git config --global user.name "Foundry Learner"
-git config --global user.email "evmbrahmin@gmail.com"
+git config --global user.name "Harpalsinh Jadeja"
+git config --global user.email "jadejaharpal14@gmail.com"
 
 # Print Git configuration for verification
 git config --global --list
 
-# Initialize Foundry project (optional, depending on your setup)
-# Uncomment the following lines if you want to initialize a Foundry project
-# echo "Initializing Foundry project..."
-# if forge init; then
-#   echo "Forge initialization completed successfully"
-# else
-#   echo "Error: Forge initialization failed"
-#   exit 1
-# fi
+if forge init; then
+  echo "Foundry Project Initialized..."
+else
+  echo "Foundry Project initialization failed..."
+  exit 1
+fi
 
 echo "Foundry installation and setup completed."
