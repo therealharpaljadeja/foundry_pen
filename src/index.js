@@ -210,6 +210,7 @@ app.post("/api/execute", (req, res) => {
 app.post("/api/test/:testName", (req, res) => {
     const { content } = req.body;
     const { testName } = req.params;
+
     const session = sessions[req.sessionToken];
 
     if (testName !== "Counter") {
