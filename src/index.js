@@ -217,41 +217,56 @@ app.post("/api/test/:testName", (req, res) => {
         res.status(404).json({ error: "Test does not exist" });
     }
 
-    const userDirPath = path.join(os.tmpdir(), session.userDir);
-    fs.writeFile(
-        `${userDirPath}/test/Counter.t.sol`,
-        content,
-        "utf-8",
-        (err, data) => {
-            if (err) {
-                res.status(500).json({ error: "Something went wrong" });
-            } else {
-                exec(
-                    "forge test",
-                    {
-                        cwd: userDir,
-                        env: {
-                            ...process.env,
-                            PATH: `${process.env.PATH}:${path.join(
-                                process.env.HOME,
-                                ".foundry/bin"
-                            )}`,
-                        },
-                    },
-                    (err, stdout, stderr) => {
-                        let output = "";
-                        let errorOutput = "";
+    const userDir = session.userDir;
+    const testFilePath = path.resolve(__dirname, `tests/${testName}.t.sol`);
+    const testFolderPathInUserDir = path.join(userDir, "test");
 
-                        stdout.on("data", (data) => {
-                            output += data;
-                        });
+    // Copy the test file to the user's foundry test folder.
+    const copy = exec(`cp ${testFilePath} ${testFolderPathInUserDir}`, {
+        cwd: __dirname,
+    });
 
-                        return res.status(200).json({ output });
-                    }
-                );
-            }
+    copy.on("close", (code) => {
+        if (code !== 0) {
+            return res.status(500).json({
+                output,
+                error: errorOutput,
+                exitCode: code,
+            });
         }
-    );
+    });
+
+    const userFilePath = path.join(userDir, "src/Counter.sol");
+
+    fs.writeFile(userFilePath, content, "utf-8", (err, data) => {
+        if (err) {
+            res.status(500).json({ error: "Something went wrong" });
+        } else {
+            exec(
+                "forge test",
+                {
+                    cwd: userDir,
+                    env: {
+                        ...process.env,
+                        PATH: `${process.env.PATH}:${path.join(
+                            process.env.HOME,
+                            ".foundry/bin"
+                        )}`,
+                    },
+                },
+                (err, stdout, stderr) => {
+                    let output = "";
+                    let errorOutput = "";
+
+                    stdout.on("data", (data) => {
+                        output += data;
+                    });
+
+                    return res.status(200).json({ output });
+                }
+            );
+        }
+    });
 });
 
 // New route to get file content
